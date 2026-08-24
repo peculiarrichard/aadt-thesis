@@ -1,0 +1,316 @@
+# Synthetic primary care case set (Section 11 Phase 1).
+#
+# Claude-drafted clinical content. NOT real patient data, NOT yet clinician-reviewed.
+# See docs/build_plan.md for review status before using this as elicitation-session
+# input or as evaluation ground truth for the baseline agent (Section 10).
+#
+# 15 cases, 5 per disposition class, each grounded in a condition actually present
+# in the ingested Nigeria STG corpus (see related_guideline_conditions, which match
+# guideline_graph_nodes.label exactly) so later retrieval testing has real matches.
+
+- case_id: SC-001
+  presenting_complaint: >-
+    A 27-year-old man presents with fever, chills, and headache for two days.
+  history: >-
+    No prior chronic illness. Reports similar episodes in the past, usually
+    resolving with antimalarial treatment. No recent travel outside the local
+    area. No cough, no dysuria, no neck stiffness.
+  examination_findings: >-
+    Temperature 38.6C, pulse 96/min, BP 110/70. Conscious and alert, no pallor,
+    no jaundice, no neck stiffness. Mild epigastric tenderness. No
+    hepatosplenomegaly. Rapid diagnostic test positive for malaria.
+  doctor_disposition: manage_at_primary_care
+  doctor_reasoning_notes: >-
+    Uncomplicated malaria in a well-looking adult with no danger signs. Started
+    on oral artemisinin-based combination therapy per standing protocol, advised
+    to return if fever persists beyond 48 hours or danger signs develop.
+  related_guideline_conditions:
+    - MALARIA
+
+- case_id: SC-002
+  presenting_complaint: >-
+    A 34-year-old woman presents with three days of watery diarrhoea and
+    abdominal cramps.
+  history: >-
+    No blood in stool. No recent antibiotic use. Drinking water from a
+    borehole shared with neighbours. Able to tolerate oral fluids. No fever.
+  examination_findings: >-
+    Temperature 37.1C, pulse 88/min, BP 108/68. Mildly dry mucous membranes,
+    no signs of severe dehydration. Abdomen soft, mildly tender, no guarding.
+    Stool microscopy pending but clinical picture consistent with amoebiasis.
+  doctor_disposition: manage_at_primary_care
+  doctor_reasoning_notes: >-
+    Mild-to-moderate dehydration only, tolerating oral intake, no blood in
+    stool and no systemic toxicity. Managed with oral rehydration and
+    antiamoebic treatment; safe to treat and observe at primary care level.
+  related_guideline_conditions:
+    - AMOEBIASIS
+
+- case_id: SC-003
+  presenting_complaint: >-
+    A 45-year-old man attends for a routine check-up and is found to have
+    elevated blood pressure on two occasions.
+  history: >-
+    No known diabetes. No chest pain, no headaches, no visual disturbance. No
+    family history documented. Non-smoker, occasional alcohol. First time
+    blood pressure has been checked in several years.
+  examination_findings: >-
+    BP 148/94 on this visit, 150/92 one week prior. No signs of end-organ
+    damage: fundoscopy unremarkable (by direct exam), no leg oedema, heart
+    sounds normal, no radio-femoral delay.
+  doctor_disposition: manage_at_primary_care
+  doctor_reasoning_notes: >-
+    Stage 1 hypertension with no evidence of end-organ damage or cardiovascular
+    risk requiring specialist input at this stage. Started on first-line
+    antihypertensive with lifestyle advice, routine follow-up in the clinic.
+  related_guideline_conditions:
+    - HYPERTENSION
+
+- case_id: SC-004
+  presenting_complaint: >-
+    A 19-year-old woman presents with itching and a rash affecting her hands
+    and abdomen for two weeks.
+  history: >-
+    Itching worse at night. A sibling at home has a similar rash. No fever, no
+    systemic symptoms. No known allergies.
+  examination_findings: >-
+    Burrow-like linear lesions between finger webs and on the flexor wrists,
+    excoriated papules on the abdomen. No signs of secondary bacterial
+    infection. Clinical picture consistent with scabies.
+  doctor_disposition: manage_at_primary_care
+  doctor_reasoning_notes: >-
+    Classic distribution and household contact history for scabies, no signs
+    of secondary infection needing further workup. Treated with topical
+    scabicide and household contact treatment advised.
+  related_guideline_conditions:
+    - SCABIES
+
+- case_id: SC-005
+  presenting_complaint: >-
+    A 22-year-old man presents with sore throat and painful swallowing for
+    three days.
+  history: >-
+    No cough, no rhinorrhoea. No history of rheumatic fever. Not
+    immunocompromised.
+  examination_findings: >-
+    Temperature 38.0C. Tonsils enlarged, erythematous, with exudate. Tender
+    anterior cervical lymphadenopathy. No trismus, no drooling, no stridor.
+  doctor_disposition: manage_at_primary_care
+  doctor_reasoning_notes: >-
+    Clinical picture consistent with acute bacterial tonsillitis with no
+    features of peritonsillar abscess or airway compromise. Started on oral
+    antibiotics and analgesia, advised to return if worsening.
+  related_guideline_conditions:
+    - TONSILLITIS
+
+- case_id: SC-006
+  presenting_complaint: >-
+    A 52-year-old man presents with increased thirst, frequent urination, and
+    unintentional weight loss over two months.
+  history: >-
+    No prior diagnosis of diabetes. Family history of diabetes in mother. No
+    known visual changes or numbness in the feet, but has not been screened.
+  examination_findings: >-
+    BMI 29. Random blood glucose 268 mg/dL, repeated and confirmed elevated on
+    a second occasion. No acetone breath, alert and not in distress. Feet
+    intact, pulses present.
+  doctor_disposition: refer_routine
+  doctor_reasoning_notes: >-
+    Newly diagnosed type 2 diabetes mellitus, clinically stable with no signs
+    of acute decompensation. Referred to the specialist diabetes clinic for
+    full workup, education, and optimisation of therapy; started on initial
+    metformin while awaiting review.
+  related_guideline_conditions:
+    - DIABETES MELLITUS
+
+- case_id: SC-007
+  presenting_complaint: >-
+    A 68-year-old man presents with a several-month history of weak urinary
+    stream, hesitancy, and waking at night to urinate.
+  history: >-
+    No fever, no haematuria, no back pain. No known kidney disease. Symptoms
+    gradually worsening, now affecting sleep.
+  examination_findings: >-
+    Abdomen soft, no palpable bladder. Digital rectal exam: prostate smoothly
+    enlarged, no nodularity. No costovertebral angle tenderness.
+  doctor_disposition: refer_routine
+  doctor_reasoning_notes: >-
+    Symptoms and exam consistent with benign prostatic hyperplasia without
+    signs of acute urinary retention or malignancy. Referred to urology for
+    further assessment (including PSA and possible imaging) on a routine
+    basis; started on alpha-blocker in the interim.
+  related_guideline_conditions:
+    - BENIGN PROSTATIC HYPERPLASIA
+
+- case_id: SC-008
+  presenting_complaint: >-
+    A 60-year-old woman with known hypertension is found to have persistently
+    reduced kidney function on routine bloodwork.
+  history: >-
+    Hypertension diagnosed eight years ago, variably controlled. No prior
+    kidney disease diagnosis. No swelling, no reduced urine output, feels
+    well.
+  examination_findings: >-
+    BP 138/86. No peripheral oedema, no pallor. Repeat serum creatinine
+    confirms reduced estimated glomerular filtration rate consistent with
+    early chronic kidney disease. Clinically stable.
+  doctor_disposition: refer_routine
+  doctor_reasoning_notes: >-
+    Early-stage chronic kidney disease, clinically stable and asymptomatic.
+    Referred to nephrology on a routine basis for staging and management
+    planning; continued antihypertensive therapy with renal-appropriate
+    adjustments while awaiting review.
+  related_guideline_conditions:
+    - CHRONIC KIDNEYDISEASE
+    - HYPERTENSION
+
+- case_id: SC-009
+  presenting_complaint: >-
+    A 39-year-old woman presents with symmetrical pain and swelling in both
+    hands and wrists for six weeks.
+  history: >-
+    Morning stiffness lasting over an hour. No psoriasis, no preceding
+    infection. No prior similar episodes. Family history of joint disease in
+    an aunt.
+  examination_findings: >-
+    Symmetrical swelling and tenderness of the metacarpophalangeal and
+    proximal interphalangeal joints of both hands. No skin rash. No fever.
+  doctor_disposition: refer_routine
+  doctor_reasoning_notes: >-
+    Clinical pattern raises suspicion for rheumatoid arthritis; needs
+    serological workup and specialist confirmation that isn't practical at
+    primary care level. Referred to rheumatology on a routine basis, given
+    no acute joint destruction or systemic illness at present.
+  related_guideline_conditions:
+    - RHEUMATOIDARTHRITIS
+
+- case_id: SC-010
+  presenting_complaint: >-
+    A 41-year-old man presents with recurrent ear discharge from the left ear
+    over several years, now with mild hearing loss.
+  history: >-
+    Intermittent foul-smelling discharge since childhood ear infections. No
+    current pain, no fever, no dizziness. No facial weakness.
+  examination_findings: >-
+    Left tympanic membrane perforation with mucoid discharge, no
+    cholesteatoma visible on otoscopy but view partially obscured by
+    discharge. No mastoid tenderness. No facial nerve involvement.
+  doctor_disposition: refer_routine
+  doctor_reasoning_notes: >-
+    Chronic otitis media with a perforated eardrum needs ENT assessment,
+    microscopic examination, and audiometry that aren't available at this
+    level, but there are no signs of an acute complication requiring
+    same-day escalation. Referred to ENT on a routine basis with ear
+    toileting advice in the interim.
+  related_guideline_conditions:
+    - CHRONIC OTITIS MEDIA
+
+- case_id: SC-011
+  presenting_complaint: >-
+    A 24-year-old woman at approximately 34 weeks of pregnancy is brought in
+    after a witnessed seizure at home.
+  history: >-
+    Known to have had elevated blood pressure and swelling of the feet
+    noted at her last antenatal visit, which she did not follow up on. One
+    generalised tonic-clonic seizure lasting about a minute, now
+    post-ictal.
+  examination_findings: >-
+    BP 168/112. Drowsy but rousable. Brisk reflexes, 2+ pitting oedema of
+    both legs. Fetal heart rate 148/min on doppler. Urinalysis shows heavy
+    proteinuria.
+  doctor_disposition: refer_urgent_emergency
+  doctor_reasoning_notes: >-
+    Eclampsia in a pregnant woman with severe hypertension and a witnessed
+    seizure is an obstetric emergency with immediate risk to both mother and
+    fetus. Magnesium sulphate initiated per protocol and emergency transfer
+    arranged immediately to a facility with obstetric and neonatal emergency
+    capability; not appropriate to manage or delay at this level.
+  related_guideline_conditions:
+    - ECLAMPSIA
+
+- case_id: SC-012
+  presenting_complaint: >-
+    A 57-year-old man presents with crushing central chest pain radiating to
+    the left arm, ongoing for 40 minutes.
+  history: >-
+    Known hypertensive, smoker. Pain started at rest, associated with
+    sweating and nausea. No prior similar episodes.
+  examination_findings: >-
+    Pulse 104/min, BP 100/64, sweating and visibly uncomfortable. Heart
+    sounds normal, no murmurs. ECG shows ST-segment elevation in the
+    anterior leads.
+  doctor_disposition: refer_urgent_emergency
+  doctor_reasoning_notes: >-
+    ECG findings and presentation are consistent with an acute ST-elevation
+    myocardial infarction, a time-critical cardiac emergency. Aspirin given
+    and emergency transfer arranged immediately to a facility capable of
+    reperfusion therapy; any delay directly worsens outcome.
+  related_guideline_conditions:
+    - MYOCARDIALINFARCTION
+
+- case_id: SC-013
+  presenting_complaint: >-
+    A 63-year-old woman with known hypertension presents with severe headache,
+    blurred vision, and confusion since this morning.
+  history: >-
+    Ran out of antihypertensive medication two weeks ago and has not been
+    taking it. No chest pain. Family reports she has been "not making sense"
+    since this morning.
+  examination_findings: >-
+    BP 224/130. Disoriented to time and place. Fundoscopy shows papilloedema.
+    No focal limb weakness noted. No neck stiffness.
+  doctor_disposition: refer_urgent_emergency
+  doctor_reasoning_notes: >-
+    Severe hypertension with signs of hypertensive encephalopathy (altered
+    mental status, papilloedema) is a hypertensive emergency requiring
+    controlled blood pressure reduction and monitoring not available at this
+    level. Emergency transfer arranged immediately; oral antihypertensives
+    alone are not appropriate given the end-organ involvement.
+  related_guideline_conditions:
+    - HYPERTENSIVE EMERGENCIES
+
+- case_id: SC-014
+  presenting_complaint: >-
+    A 29-year-old man presents with jaw stiffness and difficulty opening his
+    mouth for two days, following a farm injury with a rusty nail five days
+    ago.
+  history: >-
+    Stepped on a rusty nail five days ago, wound not cleaned or medically
+    treated. Uncertain or incomplete tetanus vaccination history. Now
+    reports neck stiffness and difficulty swallowing.
+  examination_findings: >-
+    Trismus present (limited mouth opening), neck rigidity, generalised
+    muscle stiffness. Intermittent muscle spasms observed during
+    examination. Fully conscious, no fever yet. Puncture wound on the sole
+    of the foot, unclean.
+  doctor_disposition: refer_urgent_emergency
+  doctor_reasoning_notes: >-
+    Clinical presentation (trismus, rigidity, spasms following an unclean
+    puncture wound with uncertain immunisation status) is consistent with
+    tetanus, a life-threatening emergency that can progress rapidly to
+    respiratory compromise. Tetanus immunoglobulin and wound care initiated
+    and emergency transfer arranged immediately for a facility with
+    intensive care capability.
+  related_guideline_conditions:
+    - TETANUS
+
+- case_id: SC-015
+  presenting_complaint: >-
+    A 16-year-old boy presents with sudden severe left-sided scrotal pain
+    that started two hours ago.
+  history: >-
+    Pain woke him from sleep, associated with nausea and vomiting. No fever,
+    no urinary symptoms, no recent trauma reported.
+  examination_findings: >-
+    Left testis high-riding and horizontally oriented, exquisitely tender,
+    with an absent cremasteric reflex on the left. Scrotum mildly swollen.
+    No relief of pain with elevation of the testis.
+  doctor_disposition: refer_urgent_emergency
+  doctor_reasoning_notes: >-
+    Presentation is classic for testicular torsion, a surgical emergency
+    where testicular viability depends on detorsion within hours of symptom
+    onset. Emergency transfer arranged immediately to a facility with
+    surgical capability; any delay for further outpatient workup risks
+    losing the testis.
+  related_guideline_conditions:
+    - TORSION OF THE TESTIS
