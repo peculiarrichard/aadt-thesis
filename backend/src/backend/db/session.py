@@ -7,9 +7,7 @@ from backend.config import get_settings
 
 
 def make_engine() -> Engine:
-    # A short connect_timeout keeps callers (notably the tenant-isolation test's
-    # reachability check) from hanging on Windows' long default TCP connect timeout
-    # when the database is down.
+    # Short timeout avoids Windows' long default TCP connect timeout when DB is down.
     return create_engine(get_settings().database_url, connect_args={"connect_timeout": 3})
 
 

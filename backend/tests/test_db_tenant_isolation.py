@@ -1,8 +1,5 @@
-"""Integration test proving clinician-scoped queries never leak across tenants
-(Section 3, point 8: clinician_id scoping is a day-one schema decision).
-
-Requires a live database (`docker compose up -d` from the repo root); skips otherwise.
-"""
+"""Proves clinician-scoped queries never leak across tenants (Section 3.8).
+Requires `docker compose up -d`; skips otherwise."""
 
 import pytest
 from sqlalchemy import select

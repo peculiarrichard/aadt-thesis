@@ -1,9 +1,5 @@
-"""Integration tests for the Layer 2 ingestion API (Section 5.2): retry-safety via
-idempotency, per-clinician (tenant) scoping, and the security controls added per
-docs/security_review.md items 1-4 (auth, de-identification, consent check, audit
-log). Requires a live database (`docker compose up -d` from the repo root); skips
-otherwise.
-"""
+"""Integration tests for the Layer 2 ingestion API. Requires `docker compose up
+-d`; skips otherwise."""
 
 import uuid
 from collections.abc import Iterator

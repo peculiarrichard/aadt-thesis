@@ -1,18 +1,5 @@
 """Deterministic heading/keyword extraction of condition -> symptom/recommendation
-relations from guideline text (Section 5.3's graph-based retrieval requirement).
-
-Uses the source documents' own structure rather than any model call: an ALL-CAPS line
-is treated as a condition heading, and a fixed vocabulary of Title-Case subheading
-labels ("Clinical features", "Treatment objectives", ...) tags the lines that follow
-them, until the next label or heading. Verified against the real Nigeria STG text
-(docs/guideline_corpus/nigeria_stg.pdf): these exact labels appear 100-200+ times each.
-
-Known limitation: this assumes a label's content immediately follows it in reading
-order. Source PDFs with a multi-column layout (as pypdf extracts them linearly) can
-interleave a condition's labels and its content across columns, so extraction from
-those documents is expected to be sparse, not exhaustive — see
-docs/guideline_corpus/README.md.
-"""
+relations (Section 5.3). Known limitations: docs/build_log.md task 3."""
 
 from dataclasses import dataclass, field
 

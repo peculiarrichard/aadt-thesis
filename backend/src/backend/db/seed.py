@@ -1,13 +1,7 @@
-"""Synthetic dummy data proving clinician tenant isolation (Section 3, point 8).
-
-Not real clinician or patient data. Safe to run against a scratch dev database;
-re-running clears and re-inserts everything below.
-
-Deliberately does not touch guideline_documents/guideline_chunks/guideline_graph_*:
-those are shared, not tenant-scoped, and owned by the ingestion pipeline
-(backend/src/backend/ingestion/pipeline.py) — re-running this seed must not destroy
-a real ingested guideline corpus.
-"""
+"""Synthetic dummy data for tenant isolation testing (Section 3.8). Not real
+clinician/patient data. Does not touch guideline_* tables (shared, not
+tenant-scoped, owned by ingestion/pipeline.py) -- re-running this must not
+destroy a real ingested corpus."""
 
 import datetime
 import random

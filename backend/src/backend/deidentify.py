@@ -1,24 +1,4 @@
-"""Rule-based de-identification for consultation transcripts and other free-text
-fields (Section 11 Phase 1: "de-identification pipeline"). Intended to run before
-text is written to `consultations.transcript_or_summary`/`doctor_reasoning_notes`
-or shown anywhere in the console — the future Layer 2 ingestion API and Layer 7.1
-DDT management agents (not yet built) are the intended callers.
-
-Deterministic and inspectable by design, matching the constraint checker's "rules,
-not a model" philosophy — not a statistical/NER system. See LIMITATIONS below.
-
-LIMITATIONS, stated plainly rather than left implicit:
-- Name detection only catches "Title + Capitalized Word(s)" (e.g. "Mrs. Adaeze
-  Okafor", "Dr. Bello"). A name mentioned without a title ("the patient, Adaeze,
-  said...") is not caught. A broader heuristic risks false-positive redaction of
-  ordinary capitalized clinical text (drug names, "Blood Pressure", etc.), which is
-  a worse failure mode for a first version than under-redaction.
-- Address detection is a street-suffix keyword heuristic (Street/Road/Avenue/...)
-  and will miss addresses that don't end in one of those words.
-- This is a redaction aid, not a guarantee of complete de-identification. Per
-  Section 9 ("no silent autonomy increase"), a human review step in the console
-  remains the actual safety backstop before any transcript is used or shown.
-"""
+"""Rule-based PII redaction. Limitations: docs/build_log.md task 4."""
 
 import re
 import uuid

@@ -1,12 +1,6 @@
-# Synthetic primary care case set (Section 11 Phase 1).
-#
-# Claude-drafted clinical content. NOT real patient data, NOT yet clinician-reviewed.
-# See docs/build_plan.md for review status before using this as elicitation-session
-# input or as evaluation ground truth for the baseline agent (Section 10).
-#
-# 15 cases, 5 per disposition class, each grounded in a condition actually present
-# in the ingested Nigeria STG corpus (see related_guideline_conditions, which match
-# guideline_graph_nodes.label exactly) so later retrieval testing has real matches.
+# Synthetic case set (Section 11 Phase 1). Claude-drafted, NOT clinician-reviewed.
+# related_guideline_conditions match real guideline_graph_nodes.label values.
+# See docs/build_plan.md task 5.
 
 - case_id: SC-001
   presenting_complaint: >-

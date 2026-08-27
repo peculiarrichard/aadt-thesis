@@ -1,12 +1,5 @@
-"""Loads and validates the synthetic primary care case set (Section 11 Phase 1:
-"a synthetic case set of ten to twenty primary care cases across the three
-disposition classes"), for later use in elicitation-session prep and as the
-baseline agent's test set.
-
-This is Claude-drafted clinical content, not real patient data, and not yet
-clinician-reviewed — see docs/build_plan.md for review status before using it as
-elicitation-session input or as evaluation ground truth.
-"""
+"""Loads and validates the synthetic case set (Section 11 Phase 1). Claude-drafted,
+not yet clinician-reviewed -- see docs/build_plan.md task 5."""
 
 from dataclasses import dataclass
 from pathlib import Path

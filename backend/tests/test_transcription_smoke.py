@@ -1,24 +1,11 @@
-"""Real smoke test for the Whisper transcription backend (Section 6.1/Section 8).
-
-Skipped by default: downloads the faster-whisper "base" model (~145MB) and its
-dependencies. Run explicitly with `RUN_TRANSCRIPTION_SMOKE_TEST=1 uv run pytest
-tests/test_transcription_smoke.py` (see docs/setup.md). Transcribes
-tests/fixtures/sample_audio.wav (synthetic, non-patient TTS audio) and checks the
-output contains recognizable words from the known spoken text — proves the
-pipeline works end-to-end, without asserting exact transcript equality (STT
-output for synthesized speech isn't always word-perfect).
-
-Do not import backend.transcription.whisper_backend at module level here: that
-import (faster-whisper/ctranslate2) is costly enough to slow down every `pytest`
-run, not just this file, even when this test is skipped — see
-tests/test_embeddings_smoke.py for the same lesson learned with BGE-M3.
-"""
+"""Real Whisper smoke test, skipped by default. See docs/setup.md to run it."""
 
 import os
 from pathlib import Path
 
 import pytest
 
+# Deferred into the test body -- same reason as test_embeddings_smoke.py.
 pytestmark = pytest.mark.skipif(
     os.environ.get("RUN_TRANSCRIPTION_SMOKE_TEST") != "1",
     reason="downloads the faster-whisper model (~145MB); set RUN_TRANSCRIPTION_SMOKE_TEST=1 to run",

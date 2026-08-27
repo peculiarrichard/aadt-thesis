@@ -1,21 +1,11 @@
-"""Real smoke test for the BGE-M3 embedding integration (Section 8).
-
-Skipped by default: downloads the real model (~2.5GB) and its torch dependency. Run
-explicitly with `RUN_EMBEDDING_SMOKE_TEST=1 uv run pytest tests/test_embeddings_smoke.py`
-(see docs/setup.md). This proves the integration works; it does not embed the full
-guideline corpus — see docs/build_plan.md for that gap.
-"""
+"""Real BGE-M3 smoke test, skipped by default. See docs/setup.md to run it."""
 
 import os
 
 import pytest
 
-# sentence_transformers (and the torch import behind it) is deferred into each test
-# body, not imported at module level: pytest imports every test module at collection
-# time regardless of skip markers, and that import alone costs 100s of seconds on a
-# cold environment. Importing it here would slow down every `pytest` run, not just
-# this file, even when these tests are skipped.
-
+# Deferred into each test body: pytest imports every module at collection time
+# regardless of skip markers, and this import alone costs 100s of seconds.
 pytestmark = pytest.mark.skipif(
     os.environ.get("RUN_EMBEDDING_SMOKE_TEST") != "1",
     reason="downloads the real BGE-M3 model (~2.5GB); set RUN_EMBEDDING_SMOKE_TEST=1 to run",

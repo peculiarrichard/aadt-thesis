@@ -1,24 +1,5 @@
-"""Layer 2 ingestion API (Section 5.2): "a simple ingestion API with retry and
-local queuing before upload, so that a dropped connection during upload does not
-lose a consultation transcript."
-
-Scope boundary, stated explicitly: "local queuing" in the doc's sense is a
-client-side responsibility (the intake tooling buffers a transcript until it gets
-a confirmed success response) that belongs to the console (Layer 8, not yet
-built). What this module builds is the server-side half that makes client
-retries safe: an idempotent upload endpoint backed by durable staging
-(`ingestion_queue`), so a client that resends the same upload after a dropped
-connection gets back the original result instead of creating a duplicate or
-losing data.
-
-This endpoint does not write to `consultations` — per Section 6.1, that's the
-job of the DDT management agents (Layer 7.1, not yet built), which read from
-`ingestion_queue`.
-
-Security controls added per docs/security_review.md items 1-4: a shared service
-API key (backend.api.auth), de-identification before storage, a consent-status
-check, and an audit_log write on every accepted upload.
-"""
+"""Layer 2 ingestion API (Section 5.2). Server-side retry-safety only; scope and
+security controls: docs/build_log.md task 6, docs/security_review.md."""
 
 import datetime
 import uuid
@@ -41,9 +22,7 @@ router = APIRouter(
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
-# The consent value that permits ingestion. clinicians.consent_status is a free-text
-# column (Section 7 doesn't define an enum for it) — this is this project's own
-# convention for what counts as "consented", not something the design doc specifies.
+# consent_status is free-text (Section 7); "granted" is this project's own convention.
 _CONSENTED_STATUS = "granted"
 
 

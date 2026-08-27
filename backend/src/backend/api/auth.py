@@ -1,16 +1,5 @@
-"""Shared service-to-service authentication for the API (docs/security_review.md,
-item 1: the ingestion API previously accepted any clinician_id with no check on
-who was asking).
-
-A single shared API key, not per-clinician auth: Layer 8 (the console, with real
-per-clinician login) doesn't exist yet, so there is no session/identity system to
-authenticate a specific clinician against. This only proves the caller is trusted
-intake tooling holding the shared secret, not which clinician is using it — the
-request body's clinician_id is still just an assertion, checked against the DB
-for existence (and, where relevant, consent status) but not cryptographically
-tied to the caller's identity. Revisit when the console has real per-clinician
-sessions.
-"""
+"""Shared service-to-service API key auth, not per-clinician login (still missing
+— docs/security_review.md item 1)."""
 
 from typing import Annotated
 

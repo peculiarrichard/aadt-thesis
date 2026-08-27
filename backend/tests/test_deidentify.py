@@ -1,6 +1,4 @@
-"""Tests the de-identification pipeline against synthetic fake patient records
-(Section 11 Phase 1) — none of the names, numbers, or addresses below are real.
-"""
+"""Synthetic fake records only -- none of the names/numbers/addresses are real."""
 
 from backend.deidentify import deidentify_text, generate_patient_ref
 

@@ -67,11 +67,7 @@ class Consultation(Base):
 
 
 class GuidelineDocument(Base):
-    """A source guideline document (e.g. Nigeria STG, WHO primary care).
-
-    No clinician_id: the guideline corpus is shared public knowledge, not tenant-owned data.
-    Matches Section 7's printed schema, which omits it here despite Section 3.8's general rule.
-    """
+    """A source guideline document. No clinician_id: shared, not tenant-owned (Section 7)."""
 
     __tablename__ = "guideline_documents"
 
@@ -102,12 +98,8 @@ class GuidelineChunk(Base):
 
 
 class GuidelineGraphNode(Base):
-    """A condition, symptom, or recommendation concept extracted from a guideline document.
-
-    Not part of Section 7's printed schema — designed to satisfy Section 5.3's graph-based
-    retrieval requirement, which Section 7 does not give a concrete schema for. Shared
-    per-document, not tenant-scoped, matching guideline_documents/guideline_chunks.
-    """
+    """A condition/symptom/recommendation node (Section 5.3's graph-based retrieval;
+    not in Section 7's printed schema). Shared, not tenant-scoped."""
 
     __tablename__ = "guideline_graph_nodes"
     __table_args__ = (
@@ -239,15 +231,7 @@ class AuditLog(Base):
 
 class IngestionQueueItem(Base):
     """Durable landing zone for a raw uploaded transcript (Layer 2, Section 5.2).
-
-    Not part of Section 7's printed schema. A raw upload isn't yet a processed
-    `consultations` row — per Section 6.1, the DDT management agents (Layer 7.1,
-    not yet built) extract structured fields from the transcript and write those
-    into `consultations`; this table is what they'll read from. The unique
-    constraint on (clinician_id, idempotency_key) is what makes the upload endpoint
-    retry-safe: a client resending the same upload after a dropped connection gets
-    back the original result instead of creating a duplicate.
-    """
+    Not part of Section 7's printed schema; see docs/build_log.md task 6."""
 
     __tablename__ = "ingestion_queue"
     __table_args__ = (
@@ -263,17 +247,12 @@ class IngestionQueueItem(Base):
         ForeignKey("clinicians.clinician_id"), nullable=False, index=True
     )
     idempotency_key: Mapped[str] = mapped_column(String(255), nullable=False)
-    # Reuses the "source_type" Postgres enum type created for consultations.source_type
-    # below (same concept), rather than creating a second, redundant enum type. Must use
-    # the postgresql-specific ENUM class directly: create_type=False on the generic
-    # sqlalchemy.Enum is not reliably forwarded through dialect adaptation.
+    # Reuses consultations.source_type's Postgres enum; must use PGEnum directly since
+    # generic sqlalchemy.Enum's create_type=False isn't reliably forwarded.
     source_type: Mapped[SourceType] = mapped_column(
         PGEnum(SourceType, name="source_type", create_type=False), nullable=False
     )
-    # De-identified before storage (backend.deidentify.deidentify_text) — this column
-    # never holds raw client-supplied content. redaction_summary records only category
-    # counts (e.g. {"NAME": 1, "PHONE": 1}), never the redacted originals, so it can be
-    # shown to a reviewer without itself becoming a second copy of the PII it describes.
+    # Always de-identified before storage; redaction_summary holds category counts only.
     content: Mapped[str] = mapped_column(Text, nullable=False)
     redaction_summary: Mapped[dict[str, int]] = mapped_column(JSONB, nullable=False, default=dict)
     status: Mapped[IngestionStatus] = mapped_column(
