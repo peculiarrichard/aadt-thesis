@@ -1,20 +1,7 @@
 import { useRef, useState } from 'react'
 
-/**
- * Push-to-record control (Section 6.1): the doctor explicitly starts and stops
- * recording per patient. No passive or continuous listening — recording only
- * happens between a start click and a stop click.
- *
- * Not wired into a console page yet: the intake/case view composition belongs
- * to the console shell (docs/build_plan.md task 11), not yet built. This
- * component is scaffolded and tested standalone.
- *
- * Not switched on for real consultations: capturing a live consultation
- * captures the patient's voice too, which needs patient consent and ethics
- * clearance (Section 6.1, docs/build_plan.md Phase 1) that this project doesn't
- * have yet. This component is a code-path scaffold only.
- */
-
+// Push-to-record control (Section 6.1): explicit start/stop only, no passive
+// listening. Not switched on for real consultations -- see docs/build_plan.md.
 type RecordingState = 'idle' | 'recording' | 'error'
 
 interface PushToRecordButtonProps {
@@ -65,9 +52,11 @@ export function PushToRecordButton({ onRecordingComplete }: PushToRecordButtonPr
     <div>
       <button
         type="button"
+        className="record-btn"
         aria-pressed={state === 'recording'}
         onClick={state === 'recording' ? stop : start}
       >
+        <span className="record-dot" aria-hidden="true" />
         {state === 'recording' ? 'Stop recording' : 'Start recording'}
       </button>
       {errorMessage && <p role="alert">{errorMessage}</p>}
