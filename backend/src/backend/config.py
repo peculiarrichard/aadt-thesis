@@ -15,12 +15,11 @@ class Settings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: int = 5432
 
-    # Shared secret the intake tooling presents to the ingestion API (see
-    # backend/src/backend/api/auth.py). A single shared key, not per-clinician,
-    # because Layer 8 (console, with real per-clinician login) doesn't exist yet
-    # — see docs/security_review.md. The default is dev-only; set a real value in
-    # .env before this is ever reachable from outside localhost.
+    # Shared service key (backend/api/auth.py), dev-only default -- see docs/security_review.md.
     ingestion_api_key: str = "dev-only-change-me"
+
+    # Below this, the agent escalates rather than returning a disposition (Section 9).
+    confidence_threshold: float = 0.5
 
     @property
     def database_url(self) -> str:

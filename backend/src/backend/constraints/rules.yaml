@@ -1,0 +1,85 @@
+# Red-flag rule set for the constraint checker (Section 9). Grounding and design
+# notes: docs/build_log.md task 8.
+#
+# rule_type: keyword (default) -- trigger_clauses is a list of clauses, each a list
+# of keywords; a clause fires if ALL its keywords are present, the rule fires if ANY
+# clause fires. rule_type: blood_pressure_threshold has no trigger_clauses (numeric
+# check in checker.py instead).
+
+- rule_id: RF-001
+  description: Danger signs of severe/complicated malaria
+  source_condition: MALARIA
+  source_document: nigeria_stg
+  minimum_disposition: refer_urgent_emergency
+  trigger_clauses:
+    - [impaired consciousness]
+    - [repeated vomiting]
+    - [severe anaemia]
+    - [circulatory collapse]
+    - [hypoglycaemia]
+    - [pulmonary oedema]
+    - [abnormal bleeding]
+    - [jaundice]
+    - [haemoglobinuria]
+    - [febrile seizure]
+    - [renal failure]
+    - [hyperparasitaemia]
+
+- rule_id: RF-002
+  description: Signs of eclampsia/severe pre-eclampsia in a pregnant patient
+  source_condition: ECLAMPSIA
+  source_document: nigeria_stg
+  minimum_disposition: refer_urgent_emergency
+  trigger_clauses:
+    - [pregnan, seizure]
+    - [pregnan, convulsion]
+    - [pregnan, proteinuria]
+    - [pregnan, epigastric pain]
+
+- rule_id: RF-003
+  description: Signs of acute coronary syndrome / myocardial infarction
+  source_condition: MYOCARDIALINFARCTION
+  source_document: nigeria_stg
+  minimum_disposition: refer_urgent_emergency
+  trigger_clauses:
+    - [chest pain, st elevation]
+    - [chest pain, st-segment elevation]
+    - [crushing, chest pain]
+
+- rule_id: RF-004
+  description: Signs of hypertensive emergency (encephalopathy) -- altered mentation with papilloedema
+  source_condition: HYPERTENSIVE EMERGENCIES
+  source_document: nigeria_stg
+  minimum_disposition: refer_urgent_emergency
+  trigger_clauses:
+    - [confusion, papilloedema]
+    - [blurred vision, confusion]
+    - [disoriented, papilloedema]
+
+- rule_id: RF-005
+  description: Blood pressure at or above the hypertensive-crisis threshold (systolic >=180 or diastolic >=120)
+  source_condition: HYPERTENSIVE EMERGENCIES
+  source_document: nigeria_stg
+  minimum_disposition: refer_urgent_emergency
+  rule_type: blood_pressure_threshold
+
+- rule_id: RF-006
+  description: Signs of generalized tetanus
+  source_condition: TETANUS
+  source_document: nigeria_stg
+  minimum_disposition: refer_urgent_emergency
+  trigger_clauses:
+    - [trismus]
+    - [lockjaw]
+    - [neck rigidity, muscle spasm]
+    - [neck stiffness, spasm]
+
+- rule_id: RF-007
+  description: Signs of testicular torsion
+  source_condition: TORSION OF THE TESTIS
+  source_document: nigeria_stg
+  minimum_disposition: refer_urgent_emergency
+  trigger_clauses:
+    - [testis, absent cremasteric reflex]
+    - [scrotal pain, high-riding]
+    - [testicular pain, sudden]
