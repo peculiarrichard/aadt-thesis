@@ -13,7 +13,21 @@ from backend.api.twin import router as twin_router
 from backend.config import get_settings
 
 app = FastAPI(title="ADDT Backend")
-app.add_middleware(SessionMiddleware, secret_key=get_settings().session_secret_key)
+# same_site="none" + https_only=True are required for the session cookie to
+# survive a cross-origin fetch (e.g. frontend and backend on two different
+# onrender.com subdomains) -- the default same_site="lax" is silently dropped
+# on cross-site XHR/fetch, which looks exactly like "login succeeded but /me
+# still says not logged in". Only safe to force when frontend_url is https --
+# browsers reject SameSite=None without Secure, and Secure cookies aren't set
+# over plain http (local dev), so this falls back to the old lax/non-secure
+# behavior there.
+_frontend_is_https = get_settings().frontend_url.startswith("https://")
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=get_settings().session_secret_key,
+    same_site="none" if _frontend_is_https else "lax",
+    https_only=_frontend_is_https,
+)
 # The console (frontend_url) calls this API cross-origin with credentials:
 # 'include' (api.ts) to carry the session cookie from Google login -- without
 # this, the browser silently blocks that fetch and the console looks logged
