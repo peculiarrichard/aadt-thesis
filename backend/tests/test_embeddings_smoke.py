@@ -1,4 +1,4 @@
-"""Real BGE-M3 smoke test, skipped by default. See docs/setup.md to run it."""
+"""Real BGE-M3 smoke test, skipped by default."""
 
 import os
 

@@ -1,5 +1,4 @@
-"""Layer 5 explainable AI (Section 5.5). Baseline agent only, so no
-persona/precedent citations yet -- see docs/build_log.md task 9."""
+"""Layer 5 explainable AI (Section 5.5)."""
 
 from dataclasses import dataclass
 

@@ -1,0 +1,23 @@
+{
+  "cases": [
+    {
+      "case_id": "EXAMPLE-001",
+      "case_text": "A short description of the presentation, in your own words or close to how you'd narrate it.",
+      "initial_impression": "Your first-pass read of the case before working through it in detail.",
+      "questions_to_ask": [
+        "The first thing you'd ask the patient",
+        "The second thing you'd ask"
+      ],
+      "examination_or_checks": "What you'd examine or check.",
+      "factors_toward_referral": "What would push you toward referring this case.",
+      "factors_against_referral": "What would push you toward managing it yourself.",
+      "flip_up": "What would make you escalate this to something more urgent.",
+      "flip_down": "What would make you de-escalate this to something less urgent.",
+      "red_flags": "Any danger signs specific to this case.",
+      "confidence": "How confident you are in this disposition, in your own words.",
+      "general_rule": "The general rule or heuristic this case illustrates, if any.",
+      "disposition": "self-care advice",
+      "disposition_reason": "Why you'd give this disposition."
+    }
+  ]
+}

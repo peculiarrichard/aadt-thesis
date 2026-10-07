@@ -1,5 +1,4 @@
-"""Layer 7 guideline-only baseline agent (Section 5.7, build_plan.md task 9).
-Draft/check design and confidence formula: docs/build_log.md task 9."""
+"""Layer 7 guideline-only baseline agent (Section 5.7)."""
 
 from dataclasses import dataclass
 

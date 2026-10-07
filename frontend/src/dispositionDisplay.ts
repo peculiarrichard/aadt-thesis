@@ -2,22 +2,22 @@ import type { DispositionClass } from './types'
 
 export function dispositionBadgeClass(disposition: DispositionClass): string {
   switch (disposition) {
-    case 'manage_at_primary_care':
+    case 'self_care_advice':
       return 'badge badge--manage'
-    case 'refer_routine':
+    case 'scheduled_appointment':
       return 'badge badge--routine'
-    case 'refer_urgent_emergency':
+    case 'urgent_referral':
       return 'badge badge--emergency'
   }
 }
 
 export function dispositionLabel(disposition: DispositionClass): string {
   switch (disposition) {
-    case 'manage_at_primary_care':
-      return 'Manage at primary care'
-    case 'refer_routine':
-      return 'Refer (routine)'
-    case 'refer_urgent_emergency':
-      return 'Refer (urgent/emergency)'
+    case 'self_care_advice':
+      return 'Self-care advice'
+    case 'scheduled_appointment':
+      return 'Scheduled appointment'
+    case 'urgent_referral':
+      return 'Urgent referral'
   }
 }

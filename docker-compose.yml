@@ -7,7 +7,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-addt_dev_password}
       POSTGRES_DB: ${POSTGRES_DB:-addt}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      # 127.0.0.1, not 0.0.0.0: no reason for this dev DB to be reachable from
+      # other hosts on the network.
+      - "127.0.0.1:${POSTGRES_PORT:-5434}:5432"
     volumes:
       - addt_pg_data:/var/lib/postgresql/data
     healthcheck:

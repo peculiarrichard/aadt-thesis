@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 
 // Push-to-record control (Section 6.1): explicit start/stop only, no passive
-// listening. Not switched on for real consultations -- see docs/build_plan.md.
+// listening.
 type RecordingState = 'idle' | 'recording' | 'error'
 
 interface PushToRecordButtonProps {

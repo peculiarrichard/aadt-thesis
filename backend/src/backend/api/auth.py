@@ -1,5 +1,4 @@
-"""Shared service-to-service API key auth, not per-clinician login (still missing
-— docs/security_review.md item 1)."""
+"""Shared service-to-service API key auth, not per-clinician login."""
 
 from typing import Annotated
 

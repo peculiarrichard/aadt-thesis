@@ -1,6 +1,9 @@
-# Synthetic case set (Section 11 Phase 1). Claude-drafted, NOT clinician-reviewed.
-# related_guideline_conditions match real guideline_graph_nodes.label values.
-# See docs/build_plan.md task 5.
+# Dev/smoke-test fixture ONLY -- not evaluation-relevant. The real clinician-specific
+# dataset is backend/data/walkthrough_cases_structured.json (see
+# db/import_walkthrough_cases.py). This synthetic set predates that data and is kept
+# only to exercise the loader/pipeline code paths in tests. Claude-drafted, never
+# clinician-reviewed. related_guideline_conditions match real guideline_graph_nodes.label
+# values.
 
 - case_id: SC-001
   presenting_complaint: >-
@@ -13,7 +16,7 @@
     Temperature 38.6C, pulse 96/min, BP 110/70. Conscious and alert, no pallor,
     no jaundice, no neck stiffness. Mild epigastric tenderness. No
     hepatosplenomegaly. Rapid diagnostic test positive for malaria.
-  doctor_disposition: manage_at_primary_care
+  doctor_disposition: self_care_advice
   doctor_reasoning_notes: >-
     Uncomplicated malaria in a well-looking adult with no danger signs. Started
     on oral artemisinin-based combination therapy per standing protocol, advised
@@ -32,7 +35,7 @@
     Temperature 37.1C, pulse 88/min, BP 108/68. Mildly dry mucous membranes,
     no signs of severe dehydration. Abdomen soft, mildly tender, no guarding.
     Stool microscopy pending but clinical picture consistent with amoebiasis.
-  doctor_disposition: manage_at_primary_care
+  doctor_disposition: self_care_advice
   doctor_reasoning_notes: >-
     Mild-to-moderate dehydration only, tolerating oral intake, no blood in
     stool and no systemic toxicity. Managed with oral rehydration and
@@ -52,7 +55,7 @@
     BP 148/94 on this visit, 150/92 one week prior. No signs of end-organ
     damage: fundoscopy unremarkable (by direct exam), no leg oedema, heart
     sounds normal, no radio-femoral delay.
-  doctor_disposition: manage_at_primary_care
+  doctor_disposition: self_care_advice
   doctor_reasoning_notes: >-
     Stage 1 hypertension with no evidence of end-organ damage or cardiovascular
     risk requiring specialist input at this stage. Started on first-line
@@ -71,7 +74,7 @@
     Burrow-like linear lesions between finger webs and on the flexor wrists,
     excoriated papules on the abdomen. No signs of secondary bacterial
     infection. Clinical picture consistent with scabies.
-  doctor_disposition: manage_at_primary_care
+  doctor_disposition: self_care_advice
   doctor_reasoning_notes: >-
     Classic distribution and household contact history for scabies, no signs
     of secondary infection needing further workup. Treated with topical
@@ -89,7 +92,7 @@
   examination_findings: >-
     Temperature 38.0C. Tonsils enlarged, erythematous, with exudate. Tender
     anterior cervical lymphadenopathy. No trismus, no drooling, no stridor.
-  doctor_disposition: manage_at_primary_care
+  doctor_disposition: self_care_advice
   doctor_reasoning_notes: >-
     Clinical picture consistent with acute bacterial tonsillitis with no
     features of peritonsillar abscess or airway compromise. Started on oral
@@ -108,7 +111,7 @@
     BMI 29. Random blood glucose 268 mg/dL, repeated and confirmed elevated on
     a second occasion. No acetone breath, alert and not in distress. Feet
     intact, pulses present.
-  doctor_disposition: refer_routine
+  doctor_disposition: scheduled_appointment
   doctor_reasoning_notes: >-
     Newly diagnosed type 2 diabetes mellitus, clinically stable with no signs
     of acute decompensation. Referred to the specialist diabetes clinic for
@@ -127,7 +130,7 @@
   examination_findings: >-
     Abdomen soft, no palpable bladder. Digital rectal exam: prostate smoothly
     enlarged, no nodularity. No costovertebral angle tenderness.
-  doctor_disposition: refer_routine
+  doctor_disposition: scheduled_appointment
   doctor_reasoning_notes: >-
     Symptoms and exam consistent with benign prostatic hyperplasia without
     signs of acute urinary retention or malignancy. Referred to urology for
@@ -148,7 +151,7 @@
     BP 138/86. No peripheral oedema, no pallor. Repeat serum creatinine
     confirms reduced estimated glomerular filtration rate consistent with
     early chronic kidney disease. Clinically stable.
-  doctor_disposition: refer_routine
+  doctor_disposition: scheduled_appointment
   doctor_reasoning_notes: >-
     Early-stage chronic kidney disease, clinically stable and asymptomatic.
     Referred to nephrology on a routine basis for staging and management
@@ -169,7 +172,7 @@
   examination_findings: >-
     Symmetrical swelling and tenderness of the metacarpophalangeal and
     proximal interphalangeal joints of both hands. No skin rash. No fever.
-  doctor_disposition: refer_routine
+  doctor_disposition: scheduled_appointment
   doctor_reasoning_notes: >-
     Clinical pattern raises suspicion for rheumatoid arthritis; needs
     serological workup and specialist confirmation that isn't practical at
@@ -189,7 +192,7 @@
     Left tympanic membrane perforation with mucoid discharge, no
     cholesteatoma visible on otoscopy but view partially obscured by
     discharge. No mastoid tenderness. No facial nerve involvement.
-  doctor_disposition: refer_routine
+  doctor_disposition: scheduled_appointment
   doctor_reasoning_notes: >-
     Chronic otitis media with a perforated eardrum needs ENT assessment,
     microscopic examination, and audiometry that aren't available at this
@@ -212,7 +215,7 @@
     BP 168/112. Drowsy but rousable. Brisk reflexes, 2+ pitting oedema of
     both legs. Fetal heart rate 148/min on doppler. Urinalysis shows heavy
     proteinuria.
-  doctor_disposition: refer_urgent_emergency
+  doctor_disposition: urgent_referral
   doctor_reasoning_notes: >-
     Eclampsia in a pregnant woman with severe hypertension and a witnessed
     seizure is an obstetric emergency with immediate risk to both mother and
@@ -233,7 +236,7 @@
     Pulse 104/min, BP 100/64, sweating and visibly uncomfortable. Heart
     sounds normal, no murmurs. ECG shows ST-segment elevation in the
     anterior leads.
-  doctor_disposition: refer_urgent_emergency
+  doctor_disposition: urgent_referral
   doctor_reasoning_notes: >-
     ECG findings and presentation are consistent with an acute ST-elevation
     myocardial infarction, a time-critical cardiac emergency. Aspirin given
@@ -253,7 +256,7 @@
   examination_findings: >-
     BP 224/130. Disoriented to time and place. Fundoscopy shows papilloedema.
     No focal limb weakness noted. No neck stiffness.
-  doctor_disposition: refer_urgent_emergency
+  doctor_disposition: urgent_referral
   doctor_reasoning_notes: >-
     Severe hypertension with signs of hypertensive encephalopathy (altered
     mental status, papilloedema) is a hypertensive emergency requiring
@@ -277,7 +280,7 @@
     muscle stiffness. Intermittent muscle spasms observed during
     examination. Fully conscious, no fever yet. Puncture wound on the sole
     of the foot, unclean.
-  doctor_disposition: refer_urgent_emergency
+  doctor_disposition: urgent_referral
   doctor_reasoning_notes: >-
     Clinical presentation (trismus, rigidity, spasms following an unclean
     puncture wound with uncertain immunisation status) is consistent with
@@ -299,7 +302,7 @@
     Left testis high-riding and horizontally oriented, exquisitely tender,
     with an absent cremasteric reflex on the left. Scrotum mildly swollen.
     No relief of pain with elevation of the testis.
-  doctor_disposition: refer_urgent_emergency
+  doctor_disposition: urgent_referral
   doctor_reasoning_notes: >-
     Presentation is classic for testicular torsion, a surgical emergency
     where testicular viability depends on detorsion within hours of symptom

@@ -1,5 +1,5 @@
 """Deterministic heading/keyword extraction of condition -> symptom/recommendation
-relations (Section 5.3). Known limitations: docs/build_log.md task 3."""
+relations (Section 5.3)."""
 
 from dataclasses import dataclass, field
 

@@ -1,5 +1,5 @@
 """Layer 6.1 Connector (Section 3.6, 5.6.1): typed, audited, policy-governed join
-between two twins. Design notes: docs/build_log.md task 10."""
+between two twins."""
 
 import uuid
 from dataclasses import dataclass

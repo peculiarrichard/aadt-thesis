@@ -15,7 +15,7 @@ export const MOCK_CASES: MockCase[] = [
         'Temperature 38.6C. Conscious and alert, no pallor, no jaundice, no neck stiffness. RDT positive for malaria.',
     },
     result: {
-      disposition: 'manage_at_primary_care',
+      disposition: 'self_care_advice',
       escalated: false,
       confidence: 0.8,
       explanation: {
@@ -37,7 +37,7 @@ export const MOCK_CASES: MockCase[] = [
         'BMI 29. Random blood glucose 268 mg/dL, confirmed elevated. Feet intact, pulses present.',
     },
     result: {
-      disposition: 'manage_at_primary_care',
+      disposition: 'self_care_advice',
       escalated: false,
       confidence: 0.8,
       explanation: {
@@ -99,7 +99,7 @@ export const MOCK_CASES: MockCase[] = [
 
 export const CASE_NOTES: Record<string, string> = {
   'SC-006':
-    'The doctor referred this case (refer_routine); the guideline-only baseline under-triages it to manage_at_primary_care. Expected weakness of a baseline with no persona policy or precedent memory (build_plan.md task 9).',
+    'The doctor referred this case (scheduled_appointment); the guideline-only baseline under-triages it to self_care_advice. Expected weakness of a baseline with no persona conditioning or precedent memory (build_plan.md task 9).',
 }
 
 let nextInteractionId = 1

@@ -1,5 +1,5 @@
 """Layer 6.5 cognitive services (Section 5.6.5): perceive/reason/act, each
-Connector-audited. Design notes: docs/build_log.md task 10."""
+Connector-audited."""
 
 import uuid
 from dataclasses import dataclass

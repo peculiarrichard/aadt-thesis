@@ -1,5 +1,4 @@
-"""Deterministic constraint checker (Section 9, build_plan.md task 8). Design,
-rule grounding, and known limitations: docs/build_log.md task 8."""
+"""Deterministic constraint checker (Section 9)."""
 
 import re
 from dataclasses import dataclass

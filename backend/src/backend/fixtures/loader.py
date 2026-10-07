@@ -1,5 +1,7 @@
-"""Loads and validates the synthetic case set (Section 11 Phase 1). Claude-drafted,
-not yet clinician-reviewed -- see docs/build_plan.md task 5."""
+"""Loads and validates the synthetic case set. Dev/smoke-test fixture only, not
+evaluation-relevant -- the real dataset is
+backend/data/walkthrough_cases_structured.json (see db/import_walkthrough_cases.py).
+Claude-drafted, never clinician-reviewed."""
 
 from dataclasses import dataclass
 from pathlib import Path

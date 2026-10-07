@@ -1,22 +1,36 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api, type CaseResult, type ConsoleCase } from '../api'
 import { dispositionBadgeClass, dispositionLabel } from '../dispositionDisplay'
-import { CASE_NOTES, MOCK_CASES } from '../mockData'
-import type { MockCase } from '../types'
+import type { DispositionClass } from '../types'
 import { PushToRecordButton } from './PushToRecordButton'
 
-// Layer 8 intake/case view (Section 5.8), built against mock data (task 11).
-// Recording is still a local mock capture only -- see docs/build_plan.md task 11.
+// Layer 8 intake/case view (Section 5.8), wired to real backend data.
+// The twin output panel calls GET /console/cases/{id}/result live -- it defaults
+// to the deterministic guideline_plus_precedent config, not the LLM-calling
+// configs, so browsing cases can't trigger the same memory-heavy inference path
+// the batch LOOCV run needs.
 export function IntakeCaseView() {
-  const [selected, setSelected] = useState<MockCase>(MOCK_CASES[0])
+  const [cases, setCases] = useState<ConsoleCase[] | null>(null)
+  const [casesError, setCasesError] = useState<string | null>(null)
+  const [explicitSelection, setExplicitSelection] = useState<string | null>(null)
+
   const [recordingNote, setRecordingNote] = useState<string | null>(null)
 
-  const note = CASE_NOTES[selected.input.caseId]
+  useEffect(() => {
+    api
+      .getConsoleCases()
+      .then(setCases)
+      .catch(() => setCasesError('Could not load cases.'))
+  }, [])
 
   function handleRecordingComplete(blob: Blob) {
     setRecordingNote(
       `Captured ${Math.max(1, Math.round(blob.size / 1024))} KB (${blob.type || 'unknown type'}) -- mock capture only, not sent anywhere. Real consultation recording stays gated behind ethics clearance (Section 6.1).`,
     )
   }
+
+  const selectedId = explicitSelection ?? cases?.[0]?.caseId ?? null
+  const selected = cases?.find((c) => c.caseId === selectedId) ?? null
 
   return (
     <section aria-labelledby="intake-heading" className="card">
@@ -33,73 +47,101 @@ export function IntakeCaseView() {
       </p>
 
       <h3>Case</h3>
-      <div className="field">
-        <label htmlFor="case-select">Select a case</label>
-        <select
-          id="case-select"
-          value={selected.input.caseId}
-          onChange={(event) => {
-            const next = MOCK_CASES.find((c) => c.input.caseId === event.target.value)
-            if (next) setSelected(next)
-          }}
-        >
-          {MOCK_CASES.map((mockCase) => (
-            <option key={mockCase.input.caseId} value={mockCase.input.caseId}>
-              {mockCase.input.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {casesError && <p role="alert">{casesError}</p>}
+      {!casesError && cases === null && <p>Loading cases...</p>}
+      {cases !== null && cases.length === 0 && <p>No cases found for this clinician.</p>}
 
-      <h3>Structured case summary</h3>
-      <dl className="summary-grid">
-        <dt>Presenting complaint</dt>
-        <dd>{selected.input.presentingComplaint}</dd>
-        <dt>History</dt>
-        <dd>{selected.input.history}</dd>
-        <dt>Examination findings</dt>
-        <dd>{selected.input.examinationFindings}</dd>
-      </dl>
-
-      <h3>Twin output</h3>
-      {selected.result.escalated ? (
-        <div className="result-panel result-panel--escalated" role="status">
-          <span className="badge badge--escalated">Escalated for review</span>
-          <span className="confidence">
-            confidence {selected.result.confidence.toFixed(2)} -- no disposition is shown as a
-            normal output (Section 9)
-          </span>
-        </div>
-      ) : (
-        <div className="result-panel" role="status">
-          <span className={dispositionBadgeClass(selected.result.disposition!)}>
-            {dispositionLabel(selected.result.disposition!)}
-          </span>
-          <span className="confidence">confidence {selected.result.confidence.toFixed(2)}</span>
+      {cases !== null && cases.length > 0 && (
+        <div className="field">
+          <label htmlFor="case-select">Select a case</label>
+          <select
+            id="case-select"
+            value={selectedId ?? ''}
+            onChange={(event) => setExplicitSelection(event.target.value)}
+          >
+            {cases.map((c) => (
+              <option key={c.caseId} value={c.caseId}>
+                {c.externalCaseRef ?? c.caseId}
+              </option>
+            ))}
+          </select>
         </div>
       )}
 
-      <h4>Explanation</h4>
-      <p>{selected.result.explanation.reasoningSummary}</p>
-      {selected.result.explanation.guidelineEvidence.length > 0 && (
-        <ul className="evidence-list">
-          {selected.result.explanation.guidelineEvidence.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-      )}
-      {selected.result.explanation.constraintRulesTriggered.length > 0 && (
-        <p>
-          Constraint rules triggered:{' '}
-          {selected.result.explanation.constraintRulesTriggered.join(', ')}
-        </p>
-      )}
+      {selected && (
+        <>
+          <h3>Structured case summary</h3>
+          <dl className="summary-grid">
+            <dt>Presenting summary</dt>
+            <dd>{selected.presentingSummary}</dd>
+            <dt>Doctor's disposition</dt>
+            <dd>{selected.doctorDisposition ?? 'not recorded'}</dd>
+            <dt>Source</dt>
+            <dd>{selected.sourceType}</dd>
+          </dl>
 
-      {note && (
-        <p role="note" className="note">
-          {note}
-        </p>
+          <TwinOutputPanel key={selected.caseId} caseId={selected.caseId} />
+        </>
       )}
     </section>
+  )
+}
+
+function TwinOutputPanel({ caseId }: { caseId: string }) {
+  const [result, setResult] = useState<CaseResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    api
+      .getCaseResult(caseId)
+      .then(setResult)
+      .catch(() => setError('Could not run the twin agent for this case.'))
+  }, [caseId])
+
+  return (
+    <>
+      <h3>Twin output</h3>
+      {!result && !error && <p>Running the twin agent...</p>}
+      {error && <p role="alert">{error}</p>}
+
+      {result && (
+        <>
+          {result.escalated ? (
+            <div className="result-panel result-panel--escalated" role="status">
+              <span className="badge badge--escalated">Escalated for review</span>
+              <span className="confidence">
+                confidence {result.confidence.toFixed(2)} -- no disposition is shown as a normal
+                output (Section 9)
+              </span>
+            </div>
+          ) : (
+            <div className="result-panel" role="status">
+              <span className={dispositionBadgeClass(result.disposition as DispositionClass)}>
+                {dispositionLabel(result.disposition as DispositionClass)}
+              </span>
+              <span className="confidence">confidence {result.confidence.toFixed(2)}</span>
+            </div>
+          )}
+
+          <h4>Explanation ({result.configLabel})</h4>
+          <p>{result.explanation.reasoningSummary}</p>
+          {result.explanation.guidelineEvidence.length > 0 && (
+            <ul className="evidence-list">
+              {result.explanation.guidelineEvidence.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          )}
+          {result.explanation.constraintRulesTriggered.length > 0 && (
+            <p>
+              Constraint rules triggered: {result.explanation.constraintRulesTriggered.join(', ')}
+            </p>
+          )}
+          {result.precedentCaseRefs.length > 0 && (
+            <p>Retrieved precedent cases: {result.precedentCaseRefs.join(', ')}</p>
+          )}
+        </>
+      )}
+    </>
   )
 }

@@ -1,5 +1,4 @@
-"""Whisper-based transcription (Section 6.1). Scaffold, not a final model choice
-— see docs/build_log.md task 7."""
+"""Whisper-based transcription (Section 6.1). Scaffold, not a final model choice."""
 
 from functools import lru_cache
 from pathlib import Path

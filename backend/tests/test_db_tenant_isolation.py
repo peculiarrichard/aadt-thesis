@@ -5,13 +5,13 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 
-from backend.db.models import CasePrecedentVector, Clinician, Consultation, InteractionLog
+from backend.db.models import Case, CasePrecedentVector, InteractionLog
 from backend.db.seed import seed
 from backend.db.session import SessionLocal
 
 
 @pytest.fixture
-def db_session():
+def seeded_clinicians():
     session = SessionLocal()
     try:
         session.execute(select(1))
@@ -19,43 +19,39 @@ def db_session():
         session.close()
         pytest.skip("database not reachable; run `docker compose up -d` to enable this test")
 
-    seed(session)
+    clinicians = seed(session)
     try:
-        yield session
+        yield session, clinicians
     finally:
         session.close()
 
 
-def test_consultations_are_scoped_per_clinician(db_session):
-    clinician_a, clinician_b = db_session.execute(select(Clinician)).scalars().all()
+def test_cases_are_scoped_per_clinician(seeded_clinicians):
+    db_session, (clinician_a, clinician_b) = seeded_clinicians
 
-    consultations_a = (
-        db_session.execute(
-            select(Consultation).where(Consultation.clinician_id == clinician_a.clinician_id)
-        )
+    cases_a = (
+        db_session.execute(select(Case).where(Case.clinician_id == clinician_a.clinician_id))
         .scalars()
         .all()
     )
-    consultations_b = (
-        db_session.execute(
-            select(Consultation).where(Consultation.clinician_id == clinician_b.clinician_id)
-        )
+    cases_b = (
+        db_session.execute(select(Case).where(Case.clinician_id == clinician_b.clinician_id))
         .scalars()
         .all()
     )
 
-    assert consultations_a
-    assert consultations_b
-    assert {c.clinician_id for c in consultations_a} == {clinician_a.clinician_id}
-    assert {c.clinician_id for c in consultations_b} == {clinician_b.clinician_id}
+    assert cases_a
+    assert cases_b
+    assert {c.clinician_id for c in cases_a} == {clinician_a.clinician_id}
+    assert {c.clinician_id for c in cases_b} == {clinician_b.clinician_id}
 
-    ids_a = {c.consultation_id for c in consultations_a}
-    ids_b = {c.consultation_id for c in consultations_b}
+    ids_a = {c.case_id for c in cases_a}
+    ids_b = {c.case_id for c in cases_b}
     assert ids_a.isdisjoint(ids_b)
 
 
-def test_interaction_log_and_precedent_vectors_do_not_leak_across_clinicians(db_session):
-    clinician_a, clinician_b = db_session.execute(select(Clinician)).scalars().all()
+def test_interaction_log_and_precedent_vectors_do_not_leak_across_clinicians(seeded_clinicians):
+    db_session, (clinician_a, clinician_b) = seeded_clinicians
 
     logs_a = (
         db_session.execute(

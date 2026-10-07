@@ -11,8 +11,8 @@ from sqlalchemy.exc import OperationalError
 from backend.db.enums import GraphNodeType, SourceType
 from backend.db.models import (
     AuditLog,
+    Case,
     Clinician,
-    Consultation,
     GuidelineDocument,
     GuidelineGraphNode,
 )
@@ -52,7 +52,7 @@ def make_clinician(require_db: None) -> Iterator[callable]:
     cleanup = SessionLocal()
     for clinician_id in created_ids:
         cleanup.execute(delete(AuditLog).where(AuditLog.clinician_id == clinician_id))
-        cleanup.execute(delete(Consultation).where(Consultation.clinician_id == clinician_id))
+        cleanup.execute(delete(Case).where(Case.clinician_id == clinician_id))
         cleanup.execute(delete(Clinician).where(Clinician.clinician_id == clinician_id))
     cleanup.commit()
     cleanup.close()
@@ -141,16 +141,15 @@ def test_connector_record_writes_audit_log(consented_clinician: uuid.UUID):
 
 def test_data_services_scoped_to_consented_clinician(consented_clinician: uuid.UUID):
     session = SessionLocal()
-    data_services.create_consultation(
+    data_services.create_case(
         session,
         consented_clinician,
-        patient_ref="synthetic-ref",
         transcript_or_summary="scoping test",
         source_type=SourceType.ELICITATION_SESSION,
     )
     session.commit()
 
-    results = data_services.list_consultations(session, consented_clinician)
+    results = data_services.list_cases(session, consented_clinician)
     session.close()
 
     assert len(results) == 1
@@ -161,7 +160,7 @@ def test_data_services_reject_unconsented_clinician(unconsented_clinician: uuid.
     session = SessionLocal()
 
     with pytest.raises(ConnectorPolicyError):
-        data_services.list_consultations(session, unconsented_clinician)
+        data_services.list_cases(session, unconsented_clinician)
     session.close()
 
 
@@ -170,27 +169,47 @@ def test_data_services_do_not_leak_across_clinicians(
 ):
     other = make_clinician("Services Test Clinician (other)", "granted")
     session = SessionLocal()
-    data_services.create_consultation(
+    data_services.create_case(
         session,
         consented_clinician,
-        patient_ref="a",
         transcript_or_summary="belongs to consented_clinician",
         source_type=SourceType.ELICITATION_SESSION,
     )
-    data_services.create_consultation(
+    data_services.create_case(
         session,
         other,
-        patient_ref="b",
         transcript_or_summary="belongs to other",
         source_type=SourceType.ELICITATION_SESSION,
     )
     session.commit()
 
-    results = data_services.list_consultations(session, consented_clinician)
+    results = data_services.list_cases(session, consented_clinician)
     session.close()
 
     assert len(results) == 1
     assert results[0].transcript_or_summary == "belongs to consented_clinician"
+
+
+def test_get_case_returns_none_for_another_clinicians_case(
+    consented_clinician: uuid.UUID, make_clinician: callable
+):
+    other = make_clinician("Services Test Clinician (get_case other)", "granted")
+    session = SessionLocal()
+    case = data_services.create_case(
+        session,
+        other,
+        transcript_or_summary="belongs to other",
+        source_type=SourceType.ELICITATION_SESSION,
+    )
+    session.commit()
+    case_id = case.case_id
+
+    found_for_owner = data_services.get_case(session, other, case_id)
+    found_for_stranger = data_services.get_case(session, consented_clinician, case_id)
+    session.close()
+
+    assert found_for_owner is not None
+    assert found_for_stranger is None
 
 
 # --- AI/ML, XAI, and cognitive services --------------------------------------
@@ -210,8 +229,34 @@ def test_ai_ml_service_proposes_a_disposition(
     )
     session.close()
 
-    assert output.disposition == DispositionClass.MANAGE_AT_PRIMARY_CARE
+    assert output.disposition == DispositionClass.SELF_CARE_ADVICE
     assert not output.escalated
+
+
+def test_ai_ml_service_proposes_a_disposition_for_case(
+    consented_clinician: uuid.UUID, guideline_fixture: None
+):
+    """GUIDELINE_ONLY -- deterministic, no embedding/LLM call, so this stays a
+    fast test like the rest of this file."""
+    del guideline_fixture
+    from backend.agents.twin_agent import GUIDELINE_ONLY
+
+    session = SessionLocal()
+    case = data_services.create_case(
+        session,
+        consented_clinician,
+        transcript_or_summary="fever and chills, RDT positive for malaria, no danger signs",
+        source_type=SourceType.ELICITATION_SESSION,
+    )
+    session.commit()
+
+    output = ai_ml_service.propose_disposition_for_case(
+        session, consented_clinician, case, GUIDELINE_ONLY
+    )
+    session.close()
+
+    assert output.config_label == "guideline_only"
+    assert "MALARIA" in output.explanation.matched_conditions
 
 
 def test_ai_ml_service_rejects_unconsented_clinician(unconsented_clinician: uuid.UUID):
@@ -258,7 +303,7 @@ def test_run_consultation_returns_disposition_when_not_escalated(
     session.close()
 
     assert result.escalated is False
-    assert result.disposition == DispositionClass.MANAGE_AT_PRIMARY_CARE
+    assert result.disposition == DispositionClass.SELF_CARE_ADVICE
 
 
 def test_run_consultation_withholds_disposition_when_escalated(consented_clinician: uuid.UUID):

@@ -1,5 +1,4 @@
-"""Layer 2 ingestion API (Section 5.2). Server-side retry-safety only; scope and
-security controls: docs/build_log.md task 6, docs/security_review.md."""
+"""Layer 2 ingestion API (Section 5.2). Server-side retry-safety only."""
 
 import datetime
 import uuid

@@ -1,6 +1,5 @@
 """Layer 4 guideline grounding (Section 5.4): graph-based retrieval, not vector
-similarity (full-corpus embedding isn't run yet). Design notes: docs/build_log.md
-task 9."""
+similarity (full-corpus embedding isn't run yet)."""
 
 import re
 from dataclasses import dataclass

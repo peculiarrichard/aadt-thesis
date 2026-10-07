@@ -1,5 +1,5 @@
 // Mirrors backend/src/backend/services and agents/baseline_agent.py shapes.
-export type DispositionClass = 'manage_at_primary_care' | 'refer_routine' | 'refer_urgent_emergency'
+export type DispositionClass = 'self_care_advice' | 'scheduled_appointment' | 'urgent_referral'
 
 export type ClinicianAction = 'pending' | 'approved' | 'corrected' | 'escalated_review'
 

@@ -1,4 +1,4 @@
-"""Rule-based PII redaction. Limitations: docs/build_log.md task 4."""
+"""Rule-based PII redaction."""
 
 import re
 import uuid
@@ -66,8 +66,11 @@ def deidentify_text(text: str) -> DeidentificationResult:
 
 
 def generate_patient_ref() -> str:
-    """A pseudonymous, non-identifying reference for `consultations.patient_ref`
-    (Section 7). Generated independently of any PII in the transcript — even a
-    perfect scrub of the text wouldn't make it safe to derive patient_ref from
-    patient-supplied content, so this never reads the transcript at all."""
+    """A pseudonymous, non-identifying reference for a real patient encounter.
+    Dormant along with the rest of this module: the `cases` schema currently has
+    no patient-identifier column (this doctor's data has no patient at all), but
+    a future doctor's real-consultation path would need one, and this generator
+    stays independent of any PII in the transcript for that reason — even a
+    perfect scrub of the text wouldn't make it safe to derive a patient reference
+    from patient-supplied content, so this never reads the transcript at all."""
     return f"PT-{uuid.uuid4().hex[:10]}"

@@ -36,7 +36,7 @@ def test_confidence_is_capped_low_on_constraint_violation():
             ConstraintViolation(
                 rule_id="RF-001",
                 description="x",
-                minimum_disposition=DispositionClass.REFER_URGENT_EMERGENCY,
+                minimum_disposition=DispositionClass.URGENT_REFERRAL,
             )
         ],
     )
@@ -46,8 +46,8 @@ def test_confidence_is_capped_low_on_constraint_violation():
 def test_baseline_draft_is_always_the_least_severe_class_when_no_red_flag():
     result = evaluate_case("patient with mild seasonal cold symptoms", [], confidence_threshold=0.0)
 
-    assert result.draft_disposition == DispositionClass.MANAGE_AT_PRIMARY_CARE
-    assert result.disposition == DispositionClass.MANAGE_AT_PRIMARY_CARE
+    assert result.draft_disposition == DispositionClass.SELF_CARE_ADVICE
+    assert result.disposition == DispositionClass.SELF_CARE_ADVICE
     assert result.constraint_check.passed
 
 
@@ -55,7 +55,7 @@ def test_red_flag_escalates_disposition_and_sets_reason():
     text = "Crushing central chest pain; ECG shows ST-segment elevation."
     result = evaluate_case(text, [], confidence_threshold=0.0)
 
-    assert result.disposition == DispositionClass.REFER_URGENT_EMERGENCY
+    assert result.disposition == DispositionClass.URGENT_REFERRAL
     assert "constraint_violation" in result.escalation_reasons
     assert result.escalated
 
@@ -133,7 +133,7 @@ def test_emergency_synthetic_cases_escalate_via_baseline_agent(seeded_graph_sess
     emergency_cases = [
         case
         for case in load_synthetic_cases()
-        if case.doctor_disposition == DispositionClass.REFER_URGENT_EMERGENCY
+        if case.doctor_disposition == DispositionClass.URGENT_REFERRAL
     ]
     assert len(emergency_cases) == 5
 
@@ -145,7 +145,7 @@ def test_emergency_synthetic_cases_escalate_via_baseline_agent(seeded_graph_sess
             case.examination_findings,
         )
         assert output.escalated, f"{case.case_id} should have escalated"
-        assert output.disposition == DispositionClass.REFER_URGENT_EMERGENCY
+        assert output.disposition == DispositionClass.URGENT_REFERRAL
 
 
 def test_baseline_agent_runs_without_error_on_every_synthetic_case(seeded_graph_session):

@@ -1,4 +1,4 @@
-"""Real Whisper smoke test, skipped by default. See docs/setup.md to run it."""
+"""Real Whisper smoke test, skipped by default."""
 
 import os
 from pathlib import Path

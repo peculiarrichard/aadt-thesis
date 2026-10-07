@@ -3,6 +3,16 @@
 .env.*
 !.env.example
 
+# Real clinician data -- never committed. The doctor's actual case/reasoning
+# data, not a fixture or a template. Ask the project owner for a copy.
+backend/data/walkthrough_cases_structured.json
+
+# Project docs -- kept locally, not tracked in this repo. The guideline corpus
+# (public source documents) is the one exception and stays tracked.
+docs/*
+!docs/guideline_corpus
+!docs/guideline_corpus/**
+
 # Python (backend)
 backend/.venv/
 **/__pycache__/
