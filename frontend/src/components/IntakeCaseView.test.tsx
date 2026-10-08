@@ -62,14 +62,19 @@ const ESCALATED_RESULT = {
 
 describe('IntakeCaseView', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     vi.mocked(api.getConsoleCases).mockResolvedValue(CASES)
   })
 
-  it('shows the first real case by default with its live twin disposition', async () => {
+  it('shows the first real case by default, running the twin only after the button is clicked', async () => {
     vi.mocked(api.getCaseResult).mockResolvedValue(NON_ESCALATED_RESULT)
     render(<IntakeCaseView />)
 
     expect(await screen.findByText(/RDT positive for malaria/)).toBeInTheDocument()
+    expect(api.getCaseResult).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /run twin on this case/i }))
+
     expect(await screen.findByText('Self-care advice')).toBeInTheDocument()
     expect(api.getCaseResult).toHaveBeenCalledWith('id-1')
   })
@@ -80,11 +85,30 @@ describe('IntakeCaseView', () => {
     await screen.findByText(/RDT positive for malaria/)
 
     fireEvent.change(screen.getByLabelText('Select a case'), { target: { value: 'id-2' } })
+    fireEvent.click(screen.getByRole('button', { name: /run twin on this case/i }))
 
     await waitFor(() => {
       expect(screen.getByRole('status')).toHaveTextContent(/escalated for review/i)
     })
     expect(screen.queryByText('Urgent referral')).not.toBeInTheDocument()
     expect(screen.getByText(/Constraint rules triggered/)).toHaveTextContent('RF-003')
+  })
+
+  it('runs the twin on every case, one at a time, from a single button', async () => {
+    vi.mocked(api.getCaseResult).mockResolvedValue(NON_ESCALATED_RESULT)
+    render(<IntakeCaseView />)
+    await screen.findByText(/RDT positive for malaria/)
+
+    fireEvent.click(screen.getByRole('button', { name: /run twin on all cases/i }))
+
+    await waitFor(() => {
+      expect(api.getCaseResult).toHaveBeenCalledWith('id-1')
+      expect(api.getCaseResult).toHaveBeenCalledWith('id-2')
+    })
+    expect(api.getCaseResult).toHaveBeenCalledTimes(2)
+
+    fireEvent.change(screen.getByLabelText('Select a case'), { target: { value: 'id-2' } })
+    expect(await screen.findByText('Self-care advice')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /run twin on this case/i })).not.toBeInTheDocument()
   })
 })

@@ -4,17 +4,19 @@ import { dispositionBadgeClass, dispositionLabel } from '../dispositionDisplay'
 import type { DispositionClass } from '../types'
 import { PushToRecordButton } from './PushToRecordButton'
 
-// Layer 8 intake/case view (Section 5.8), wired to real backend data.
-// The twin output panel calls GET /console/cases/{id}/result live -- it defaults
-// to the deterministic guideline_plus_precedent config, not the LLM-calling
-// configs, so browsing cases can't trigger the same memory-heavy inference path
-// the batch LOOCV run needs.
+// Twin output only runs on an explicit button click, using the deterministic
+// guideline_plus_precedent config (not the LLM-calling ones).
 export function IntakeCaseView() {
   const [cases, setCases] = useState<ConsoleCase[] | null>(null)
   const [casesError, setCasesError] = useState<string | null>(null)
   const [explicitSelection, setExplicitSelection] = useState<string | null>(null)
 
   const [recordingNote, setRecordingNote] = useState<string | null>(null)
+
+  const [results, setResults] = useState<Record<string, CaseResult>>({})
+  const [resultErrors, setResultErrors] = useState<Record<string, string>>({})
+  const [runningIds, setRunningIds] = useState<Set<string>>(new Set())
+  const [runningAll, setRunningAll] = useState(false)
 
   useEffect(() => {
     api
@@ -27,6 +29,34 @@ export function IntakeCaseView() {
     setRecordingNote(
       `Captured ${Math.max(1, Math.round(blob.size / 1024))} KB (${blob.type || 'unknown type'}) -- mock capture only, not sent anywhere. Real consultation recording stays gated behind ethics clearance (Section 6.1).`,
     )
+  }
+
+  async function runCase(caseId: string) {
+    setRunningIds((prev) => new Set(prev).add(caseId))
+    setResultErrors(({ [caseId]: _dropped, ...rest }) => rest)
+    try {
+      const result = await api.getCaseResult(caseId)
+      setResults((prev) => ({ ...prev, [caseId]: result }))
+    } catch {
+      setResultErrors((prev) => ({ ...prev, [caseId]: 'Could not run the twin agent for this case.' }))
+    } finally {
+      setRunningIds((prev) => {
+        const next = new Set(prev)
+        next.delete(caseId)
+        return next
+      })
+    }
+  }
+
+  async function handleRunAll() {
+    if (!cases) return
+    setRunningAll(true)
+    // Sequential, not Promise.all -- each call hits the DB, and running every
+    // case concurrently is the same connection-pool spike a batch LOOCV run causes.
+    for (const c of cases) {
+      await runCase(c.caseId)
+    }
+    setRunningAll(false)
   }
 
   const selectedId = explicitSelection ?? cases?.[0]?.caseId ?? null
@@ -65,6 +95,9 @@ export function IntakeCaseView() {
               </option>
             ))}
           </select>
+          <button type="button" onClick={handleRunAll} disabled={runningAll}>
+            {runningAll ? 'Running twin on all cases...' : 'Run twin on all cases'}
+          </button>
         </div>
       )}
 
@@ -80,28 +113,37 @@ export function IntakeCaseView() {
             <dd>{selected.sourceType}</dd>
           </dl>
 
-          <TwinOutputPanel key={selected.caseId} caseId={selected.caseId} />
+          <TwinOutputPanel
+            result={results[selected.caseId] ?? null}
+            error={resultErrors[selected.caseId] ?? null}
+            running={runningIds.has(selected.caseId)}
+            onRun={() => runCase(selected.caseId)}
+          />
         </>
       )}
     </section>
   )
 }
 
-function TwinOutputPanel({ caseId }: { caseId: string }) {
-  const [result, setResult] = useState<CaseResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    api
-      .getCaseResult(caseId)
-      .then(setResult)
-      .catch(() => setError('Could not run the twin agent for this case.'))
-  }, [caseId])
-
+function TwinOutputPanel({
+  result,
+  error,
+  running,
+  onRun,
+}: {
+  result: CaseResult | null
+  error: string | null
+  running: boolean
+  onRun: () => void
+}) {
   return (
     <>
       <h3>Twin output</h3>
-      {!result && !error && <p>Running the twin agent...</p>}
+      {!result && (
+        <button type="button" onClick={onRun} disabled={running}>
+          {running ? 'Running the twin agent...' : 'Run twin on this case'}
+        </button>
+      )}
       {error && <p role="alert">{error}</p>}
 
       {result && (
