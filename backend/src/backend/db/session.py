@@ -8,7 +8,13 @@ from backend.config import get_settings
 
 def make_engine() -> Engine:
     # Short timeout avoids Windows' long default TCP connect timeout when DB is down.
-    return create_engine(get_settings().database_url, connect_args={"connect_timeout": 3})
+    # pool_size/max_overflow kept small: Aiven's free tier caps total connections at 20.
+    return create_engine(
+        get_settings().database_url,
+        connect_args={"connect_timeout": 3},
+        pool_size=3,
+        max_overflow=2,
+    )
 
 
 engine = make_engine()
