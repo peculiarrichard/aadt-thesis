@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from backend.api.case_intake import router as case_intake_router
@@ -11,6 +12,7 @@ from backend.api.google_auth import router as google_auth_router
 from backend.api.ingestion import router as ingestion_router
 from backend.api.twin import router as twin_router
 from backend.config import get_settings
+from backend.services.connector import ConnectorError, ConnectorPolicyError
 
 app = FastAPI(title="ADDT Backend")
 # same_site="none" + https_only=True are required for the session cookie to
@@ -48,6 +50,22 @@ app.include_router(case_intake_router)
 app.include_router(case_recording_router)
 app.include_router(twin_router)
 app.include_router(consult_router)
+
+
+# Without these, an unconsented/unknown clinician hitting any data-service
+# endpoint gets an opaque 500 (Connector.authorize() raises a plain Exception
+# subclass, which FastAPI otherwise lets propagate unhandled) instead of a
+# clean, actionable response -- e.g. a self-service login's consent_status
+# defaults to "pending" until granted, which is the expected, common case,
+# not a server fault.
+@app.exception_handler(ConnectorPolicyError)
+def _handle_connector_policy_error(request: Request, exc: ConnectorPolicyError) -> JSONResponse:
+    return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+
+@app.exception_handler(ConnectorError)
+def _handle_connector_error(request: Request, exc: ConnectorError) -> JSONResponse:
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
 
 
 @app.get("/health")
