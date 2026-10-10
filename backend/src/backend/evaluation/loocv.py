@@ -69,6 +69,8 @@ def run_loocv(
                     escalated=output.escalated,
                     model_version=config.label,
                 )
+                # Commit per row so one later LLM failure can't roll back earlier ones.
+                session.commit()
 
         return {
             label: summarize(label, predictions_by_config[label], actuals_by_config[label])
