@@ -88,6 +88,13 @@ def _try_parse(raw: str) -> PersonaDraft | None:
         if upper.startswith("DISPOSITION:"):
             label = stripped.split(":", 1)[1].strip().lower()
             disposition = FROM_WALKTHROUGH_LABEL.get(label)
+            if disposition is None:
+                # Model sometimes answers with the enum's own snake_case value
+                # (e.g. "scheduled_appointment") instead of the human phrase.
+                try:
+                    disposition = DispositionClass(label)
+                except ValueError:
+                    pass
         elif upper.startswith("REASONING:"):
             reasoning = stripped.split(":", 1)[1].strip()
 

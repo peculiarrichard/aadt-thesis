@@ -62,3 +62,12 @@ def test_parses_disposition_case_insensitively():
         draft = draft_from_persona("case", [_make_case("urgent_referral")])
 
     assert draft.disposition == DispositionClass.URGENT_REFERRAL
+
+
+def test_parses_disposition_given_as_the_enum_value():
+    response = "DISPOSITION: scheduled_appointment\nREASONING: because."
+
+    with patch("backend.agents.persona_agent.chat_completion", return_value=response):
+        draft = draft_from_persona("case", [_make_case("scheduled_appointment")])
+
+    assert draft.disposition == DispositionClass.SCHEDULED_APPOINTMENT
