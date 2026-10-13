@@ -6,6 +6,7 @@ plus a prior import+embed of the walkthrough cases; skips otherwise.
 """
 
 from unittest.mock import patch
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import select
@@ -49,6 +50,10 @@ def db_session():
 
 def _held_out_case(session, external_ref: str) -> Case:
     return session.execute(select(Case).where(Case.external_case_ref == external_ref)).scalar_one()
+
+
+def _fake_case(disposition: str) -> Case:
+    return Case(case_id=uuid4(), clinician_id=uuid4(), doctor_disposition=disposition)
 
 
 def test_guideline_only_matches_baseline_style_output(db_session):
@@ -153,3 +158,69 @@ def test_constraint_checker_veto_overrides_an_under_triaged_persona_draft(db_ses
     assert output.disposition == DispositionClass.URGENT_REFERRAL
     assert "constraint_violation" in output.escalation_reasons
     assert output.escalated is True
+
+
+def test_full_system_flags_disagreement_between_persona_and_precedent(db_session):
+    session, clinician = db_session
+    held_out = _held_out_case(session, "S1-C02")
+    fake_precedent = [
+        _fake_case("urgent_referral"),
+        _fake_case("urgent_referral"),
+        _fake_case("self_care_advice"),
+    ]
+
+    with (
+        patch("backend.agents.twin_agent.retrieve_precedent_cases", return_value=fake_precedent),
+        patch("backend.ingestion.embeddings.embed_texts", return_value=[[0.0] * 4]),
+        patch(
+            "backend.agents.twin_agent.draft_from_persona",
+            return_value=PersonaDraft(
+                disposition=DispositionClass.SELF_CARE_ADVICE, reasoning="persona disagrees"
+            ),
+        ),
+    ):
+        output = run_twin_agent(
+            session,
+            clinician.clinician_id,
+            held_out.transcript_or_summary,
+            FULL_SYSTEM,
+            exclude_case_id=held_out.case_id,
+        )
+
+    # Persona still decides the disposition -- disagreement only affects
+    # confidence/escalation, it never silently overrides persona's answer.
+    assert output.draft_disposition == DispositionClass.SELF_CARE_ADVICE
+    assert "precedent_disagreement" in output.escalation_reasons
+    assert output.confidence <= 0.3
+    assert output.escalated is True
+
+
+def test_full_system_does_not_flag_agreement_between_persona_and_precedent(db_session):
+    session, clinician = db_session
+    held_out = _held_out_case(session, "S1-C02")
+    fake_precedent = [
+        _fake_case("scheduled_appointment"),
+        _fake_case("scheduled_appointment"),
+        _fake_case("urgent_referral"),
+    ]
+
+    with (
+        patch("backend.agents.twin_agent.retrieve_precedent_cases", return_value=fake_precedent),
+        patch("backend.ingestion.embeddings.embed_texts", return_value=[[0.0] * 4]),
+        patch(
+            "backend.agents.twin_agent.draft_from_persona",
+            return_value=PersonaDraft(
+                disposition=DispositionClass.SCHEDULED_APPOINTMENT, reasoning="agrees"
+            ),
+        ),
+    ):
+        output = run_twin_agent(
+            session,
+            clinician.clinician_id,
+            held_out.transcript_or_summary,
+            FULL_SYSTEM,
+            exclude_case_id=held_out.case_id,
+        )
+
+    assert "precedent_disagreement" not in output.escalation_reasons
+    assert output.confidence == pytest.approx(0.7)

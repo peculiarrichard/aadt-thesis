@@ -8,11 +8,14 @@ central experiment compares against the guideline-only baseline.
 
 Operational definition of the two "partial" ablations, since the design doc lists
 them but doesn't spell out how "precedent" and "persona" decouple when persona is
-itself defined as retrieval-based conditioning: guideline+precedent retrieves the
-k nearest cases and surfaces them as cited evidence, drafting via a deterministic
-case-based-reasoning vote (no LLM call); guideline+persona calls the LLM for
-few-shot conditioning without retrieval feeding it. The full system is precedent
-retrieval feeding the LLM few-shot call.
+itself defined as retrieval-based conditioning (Section 5.4): guideline+precedent
+retrieves the k nearest cases and drafts via a deterministic case-based-reasoning
+vote (no LLM call); guideline+persona calls the LLM, fed the same retrieved cases
+as its few-shot worked examples -- retrieval always feeds persona, per Section 5.4,
+it just isn't cross-checked against precedent's own independent vote in this config.
+The full system runs persona exactly as above, then additionally compares its draft
+against precedent's independent majority vote: disagreement lowers confidence and
+adds an escalation reason, rather than letting persona silently override precedent.
 """
 
 import uuid
@@ -34,6 +37,7 @@ _EVIDENCE_FOUND_CONFIDENCE = 0.8
 _PERSONA_CONFIDENCE = 0.7
 _CONSTRAINT_VIOLATION_CONFIDENCE_CAP = 0.2
 _PERSONA_PARSE_FAILURE_CONFIDENCE = 0.0
+_PRECEDENT_DISAGREEMENT_CONFIDENCE_CAP = 0.3
 
 _LEAST_SEVERE = DISPOSITION_SEVERITY_ORDER[0]
 
@@ -121,6 +125,7 @@ def run_twin_agent(
     draft = _LEAST_SEVERE
     reasoning_note: str | None = None
     persona_failed = False
+    precedent_disagreement = False
 
     if config.use_persona and precedent_cases:
         try:
@@ -132,6 +137,11 @@ def run_twin_agent(
     elif config.use_precedent and precedent_cases:
         draft = _majority_disposition(precedent_cases)
 
+    # full_system only: cross-check persona's draft against precedent's own
+    # independent vote instead of letting persona silently override it.
+    if config.use_precedent and config.use_persona and not persona_failed and precedent_cases:
+        precedent_disagreement = _majority_disposition(precedent_cases) != draft
+
     constraint_result = check_constraints(perceived_text, draft)
 
     if persona_failed:
@@ -142,6 +152,8 @@ def run_twin_agent(
         confidence = _EVIDENCE_FOUND_CONFIDENCE
     else:
         confidence = _NO_EVIDENCE_CONFIDENCE
+    if precedent_disagreement:
+        confidence = min(confidence, _PRECEDENT_DISAGREEMENT_CONFIDENCE_CAP)
     if not constraint_result.passed:
         confidence = min(confidence, _CONSTRAINT_VIOLATION_CONFIDENCE_CAP)
 
@@ -149,6 +161,8 @@ def run_twin_agent(
     reasons: list[str] = []
     if persona_failed:
         reasons.append("persona_response_unparseable")
+    if precedent_disagreement:
+        reasons.append("precedent_disagreement")
     if not constraint_result.passed:
         disposition = _most_severe(constraint_result.violations)
         reasons.append("constraint_violation")
