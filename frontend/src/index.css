@@ -319,6 +319,73 @@ textarea {
   font-size: 13px;
 }
 
+/* --- Twin thought process ------------------------------------------------- */
+
+.thought-process {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.thought-process h4,
+.thought-process h5 {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  color: var(--text-h);
+}
+
+.thought-process h5 {
+  margin-top: 12px;
+}
+
+.thought-note {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.thought-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.thought-list li {
+  margin-bottom: 4px;
+}
+
+.thought-list--warning {
+  color: var(--emergency);
+  font-weight: 600;
+}
+
+.escalation-reasons ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.guideline-details {
+  margin-top: 10px;
+  font-size: 13.5px;
+}
+
+.guideline-details summary {
+  cursor: pointer;
+  color: var(--brand-dark);
+}
+
+.thought-raw {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 /* --- Recording control ---------------------------------------------------- */
 
 .record-row {

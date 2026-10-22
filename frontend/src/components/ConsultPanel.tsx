@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api, type ConsultResult } from '../api'
 import { dispositionBadgeClass, dispositionLabel } from '../dispositionDisplay'
 import type { DispositionClass } from '../types'
+import { TwinThoughtProcess } from './TwinThoughtProcess'
 
 const DISPOSITION_OPTIONS = ['self-care advice', 'scheduled appointment', 'urgent referral']
 
@@ -58,8 +59,8 @@ export function ConsultPanel() {
             <div className="result-panel result-panel--escalated" role="status">
               <span className="badge badge--escalated">Escalated for review</span>
               <span className="confidence">
-                confidence {result.confidence.toFixed(2)} -- no disposition shown as a normal output
-                (Section 9)
+                Confidence: {(result.confidence * 100).toFixed(0)}% -- too low to show a direct
+                answer; a person should review this case instead.
               </span>
             </div>
           ) : (
@@ -67,10 +68,11 @@ export function ConsultPanel() {
               <span className={dispositionBadgeClass(result.disposition as DispositionClass)}>
                 {dispositionLabel(result.disposition as DispositionClass)}
               </span>
-              <span className="confidence">confidence {result.confidence.toFixed(2)}</span>
+              <span className="confidence">Confidence: {(result.confidence * 100).toFixed(0)}%</span>
             </div>
           )}
-          <p>{result.explanation.reasoningSummary}</p>
+
+          <TwinThoughtProcess result={result} />
 
           {!feedbackGiven && (
             <FeedbackControls
