@@ -107,13 +107,14 @@ def run_twin_agent(
     """perceive -> retrieve (guideline always; precedent if configured) -> draft ->
     check -> explain -> escalate."""
     perceived_text = case_text.strip()
-    matches = retrieve_guideline_evidence(session, perceived_text)
+
+    from backend.ingestion.embeddings import embed_texts  # deferred: heavy (BGE-M3/torch)
+
+    query_embedding = embed_texts([perceived_text])[0]
+    matches = retrieve_guideline_evidence(session, query_embedding)
 
     precedent_cases: list[Case] = []
     if config.use_precedent or config.use_persona:
-        from backend.ingestion.embeddings import embed_texts  # deferred: heavy (BGE-M3/torch)
-
-        query_embedding = embed_texts([perceived_text])[0]
         precedent_cases = retrieve_precedent_cases(
             session,
             clinician_id,

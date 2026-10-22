@@ -1,17 +1,29 @@
-"""Layer 4 guideline grounding (Section 5.4): graph-based retrieval, not vector
-similarity (full-corpus embedding isn't run yet)."""
+"""Layer 4 guideline grounding: nearest-chunk vector retrieval over the embedded
+guideline corpus, then condition nodes are read off whichever chunks come back
+(same BGE-M3 index built by the ingestion pipeline, reused rather than a second
+retrieval mechanism)."""
 
-import re
+import uuid
 from dataclasses import dataclass
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.db.enums import GraphNodeType, GraphRelationType
-from backend.db.models import GuidelineDocument, GuidelineGraphEdge, GuidelineGraphNode
+from backend.db.enums import GraphRelationType
+from backend.db.models import (
+    GuidelineChunk,
+    GuidelineDocument,
+    GuidelineGraphEdge,
+    GuidelineGraphNode,
+)
 
-_MIN_TOKEN_LEN = 5
+DEFAULT_CHUNK_K = 3
 _MAX_EVIDENCE_ITEMS = 5
+
+# Empirically calibrated against the real corpus: distances for genuinely
+# related real case text cluster ~0.41-0.44, an unrelated control query ~0.49 --
+# the gap is narrow, so this is a tuned cutoff, not a clean separation.
+MAX_RELEVANT_DISTANCE = 0.46
 
 
 @dataclass(frozen=True)
@@ -22,63 +34,60 @@ class GuidelineMatch:
     document_source: str
 
 
-def _significant_tokens(label: str) -> set[str]:
-    return {token for token in re.findall(r"[a-z]+", label.lower()) if len(token) >= _MIN_TOKEN_LEN}
-
-
-def condition_matches_text(label: str, lowered_case_text: str) -> bool:
-    """Pure matching function, unit-tested independently of the database."""
-    tokens = _significant_tokens(label)
-    if not tokens:
-        return label.lower() in lowered_case_text
-    return any(token in lowered_case_text for token in tokens)
-
-
-def retrieve_guideline_evidence(session: Session, case_text: str) -> list[GuidelineMatch]:
-    """Matching CONDITION nodes with their linked symptoms/recommendations."""
-    lowered = case_text.lower()
-    condition_nodes = (
-        session.execute(
-            select(GuidelineGraphNode).where(
-                GuidelineGraphNode.node_type == GraphNodeType.CONDITION
-            )
-        )
-        .scalars()
-        .all()
-    )
+def retrieve_guideline_evidence(
+    session: Session, query_embedding: list[float], k: int = DEFAULT_CHUNK_K
+) -> list[GuidelineMatch]:
+    distance_expr = GuidelineChunk.embedding.cosine_distance(query_embedding)
+    rows = session.execute(
+        select(GuidelineChunk, distance_expr.label("distance"))
+        .where(GuidelineChunk.embedding.is_not(None))
+        .order_by(distance_expr)
+        .limit(k)
+    ).all()
 
     matches: list[GuidelineMatch] = []
-    for node in condition_nodes:
-        if not condition_matches_text(node.label, lowered):
+    seen_conditions: set[uuid.UUID] = set()
+    for chunk, distance in rows:
+        if distance > MAX_RELEVANT_DISTANCE:
             continue
-
-        edges = (
-            session.execute(
-                select(GuidelineGraphEdge).where(GuidelineGraphEdge.source_node_id == node.node_id)
+        for condition_id, symptom_ids, recommendation_ids in _conditions_for_chunk(
+            session, chunk.chunk_id
+        ):
+            if condition_id in seen_conditions:
+                continue
+            seen_conditions.add(condition_id)
+            condition_node = session.get(GuidelineGraphNode, condition_id)
+            document = session.get(GuidelineDocument, condition_node.document_id)
+            matches.append(
+                GuidelineMatch(
+                    condition=condition_node.label,
+                    symptoms=_labels_for(session, symptom_ids)[:_MAX_EVIDENCE_ITEMS],
+                    recommendations=_labels_for(session, recommendation_ids)[:_MAX_EVIDENCE_ITEMS],
+                    document_source=document.source if document else "unknown",
+                )
             )
-            .scalars()
-            .all()
-        )
-        symptom_ids = [
-            e.target_node_id for e in edges if e.relation_type == GraphRelationType.PRESENTS_WITH
-        ]
-        recommendation_ids = [
-            e.target_node_id for e in edges if e.relation_type == GraphRelationType.RECOMMENDS
-        ]
-
-        document = session.get(GuidelineDocument, node.document_id)
-        matches.append(
-            GuidelineMatch(
-                condition=node.label,
-                symptoms=_labels_for(session, symptom_ids)[:_MAX_EVIDENCE_ITEMS],
-                recommendations=_labels_for(session, recommendation_ids)[:_MAX_EVIDENCE_ITEMS],
-                document_source=document.source if document else "unknown",
-            )
-        )
     return matches
 
 
-def _labels_for(session: Session, node_ids: list) -> list[str]:
+def _conditions_for_chunk(
+    session: Session, chunk_id: uuid.UUID
+) -> list[tuple[uuid.UUID, list[uuid.UUID], list[uuid.UUID]]]:
+    edges = (
+        session.execute(select(GuidelineGraphEdge).where(GuidelineGraphEdge.chunk_id == chunk_id))
+        .scalars()
+        .all()
+    )
+    by_condition: dict[uuid.UUID, tuple[list[uuid.UUID], list[uuid.UUID]]] = {}
+    for edge in edges:
+        symptom_ids, recommendation_ids = by_condition.setdefault(edge.source_node_id, ([], []))
+        if edge.relation_type == GraphRelationType.PRESENTS_WITH:
+            symptom_ids.append(edge.target_node_id)
+        elif edge.relation_type == GraphRelationType.RECOMMENDS:
+            recommendation_ids.append(edge.target_node_id)
+    return [(cid, s, r) for cid, (s, r) in by_condition.items()]
+
+
+def _labels_for(session: Session, node_ids: list[uuid.UUID]) -> list[str]:
     if not node_ids:
         return []
     nodes = (

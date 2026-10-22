@@ -8,12 +8,14 @@ import pytest
 from sqlalchemy import delete, select
 from sqlalchemy.exc import OperationalError
 
-from backend.db.enums import GraphNodeType, SourceType
+from backend.db.enums import GraphNodeType, GraphRelationType, SourceType
 from backend.db.models import (
     AuditLog,
     Case,
     Clinician,
+    GuidelineChunk,
     GuidelineDocument,
+    GuidelineGraphEdge,
     GuidelineGraphNode,
 )
 from backend.db.session import SessionLocal
@@ -68,26 +70,54 @@ def unconsented_clinician(make_clinician: callable) -> uuid.UUID:
     return make_clinician("Services Test Clinician (unconsented)", "pending")
 
 
+_FIXTURE_CASE_TEXT = "fever and chills RDT positive for malaria no danger signs"
+
+
 @pytest.fixture
 def guideline_fixture(require_db: None) -> Iterator[None]:
-    """One real condition label so reason()/run_consultation have evidence to find."""
+    """One real condition label, linked via a real embedded chunk to the exact
+    case text these tests use -- vector retrieval only surfaces a condition
+    through a chunk it's evidenced by, unlike the old keyword heuristic that
+    could match a bare label directly."""
     del require_db
+    from backend.ingestion.embeddings import embed_texts  # deferred: heavy (BGE-M3/torch)
+
     session = SessionLocal()
     document = GuidelineDocument(title="Services Test Fixture", source="test-fixture")
     session.add(document)
     session.flush()
+    condition = GuidelineGraphNode(
+        document_id=document.document_id, node_type=GraphNodeType.CONDITION, label="MALARIA"
+    )
+    symptom = GuidelineGraphNode(
+        document_id=document.document_id, node_type=GraphNodeType.SYMPTOM, label="Fever and chills"
+    )
+    session.add_all([condition, symptom])
+    chunk = GuidelineChunk(
+        document_id=document.document_id,
+        content=_FIXTURE_CASE_TEXT,
+        embedding=embed_texts([_FIXTURE_CASE_TEXT])[0],
+    )
+    session.add(chunk)
+    session.flush()
     session.add(
-        GuidelineGraphNode(
-            document_id=document.document_id, node_type=GraphNodeType.CONDITION, label="MALARIA"
+        GuidelineGraphEdge(
+            source_node_id=condition.node_id,
+            target_node_id=symptom.node_id,
+            relation_type=GraphRelationType.PRESENTS_WITH,
+            chunk_id=chunk.chunk_id,
         )
     )
     session.commit()
     document_id = document.document_id
+    chunk_id = chunk.chunk_id
     session.close()
 
     yield
 
     cleanup = SessionLocal()
+    cleanup.execute(delete(GuidelineGraphEdge).where(GuidelineGraphEdge.chunk_id == chunk_id))
+    cleanup.execute(delete(GuidelineChunk).where(GuidelineChunk.document_id == document_id))
     cleanup.execute(delete(GuidelineGraphNode).where(GuidelineGraphNode.document_id == document_id))
     cleanup.execute(delete(GuidelineDocument).where(GuidelineDocument.document_id == document_id))
     cleanup.commit()

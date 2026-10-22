@@ -85,8 +85,11 @@ def run_baseline_agent(
 ) -> AgentOutput:
     """The full loop: perceive -> retrieve (DB) -> draft -> check -> explain ->
     escalate."""
+    from backend.ingestion.embeddings import embed_texts  # deferred: heavy (BGE-M3/torch)
+
     perceived = perceive(presenting_complaint, history, examination_findings)
-    matches = retrieve_guideline_evidence(session, perceived.case_text)
+    query_embedding = embed_texts([perceived.case_text])[0]
+    matches = retrieve_guideline_evidence(session, query_embedding)
     threshold = (
         confidence_threshold
         if confidence_threshold is not None

@@ -21,9 +21,15 @@ from backend.agents.twin_agent import (
     run_twin_agent,
 )
 from backend.db.import_walkthrough_cases import WALKTHROUGH_CLINICIAN_NAME
-from backend.db.models import Case, Clinician
+from backend.db.models import EMBEDDING_DIM, Case, Clinician
 from backend.db.session import SessionLocal
 from backend.disposition import DispositionClass
+
+# A well-formed unit vector, matching the real embedding dimension -- the real
+# guideline_chunks table requires it (cosine distance against a wrong-dimension
+# or all-zero vector errors/degenerates), even though these tests mock precedent
+# retrieval and don't care what guideline evidence comes back.
+_FAKE_QUERY_EMBEDDING = [1.0] + [0.0] * (EMBEDDING_DIM - 1)
 
 
 @pytest.fixture
@@ -171,7 +177,7 @@ def test_full_system_flags_disagreement_between_persona_and_precedent(db_session
 
     with (
         patch("backend.agents.twin_agent.retrieve_precedent_cases", return_value=fake_precedent),
-        patch("backend.ingestion.embeddings.embed_texts", return_value=[[0.0] * 4]),
+        patch("backend.ingestion.embeddings.embed_texts", return_value=[_FAKE_QUERY_EMBEDDING]),
         patch(
             "backend.agents.twin_agent.draft_from_persona",
             return_value=PersonaDraft(
@@ -206,7 +212,7 @@ def test_full_system_does_not_flag_agreement_between_persona_and_precedent(db_se
 
     with (
         patch("backend.agents.twin_agent.retrieve_precedent_cases", return_value=fake_precedent),
-        patch("backend.ingestion.embeddings.embed_texts", return_value=[[0.0] * 4]),
+        patch("backend.ingestion.embeddings.embed_texts", return_value=[_FAKE_QUERY_EMBEDDING]),
         patch(
             "backend.agents.twin_agent.draft_from_persona",
             return_value=PersonaDraft(
