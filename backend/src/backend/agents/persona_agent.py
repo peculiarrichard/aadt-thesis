@@ -14,12 +14,18 @@ from backend.llm.client import chat_completion
 _SYSTEM_PROMPT = (
     "You are conditioning your answer on one specific doctor's own past decisions. "
     "You will be shown several of her real cases as worked examples: her "
-    "presentation, her reasoning, and her disposition. Then you will be given a new "
-    "case. Decide the disposition this SAME doctor would most likely give, based on "
-    "how she reasoned in the examples -- not generic medical guidance.\n\n"
+    "presentation, her workup (first impression, what she'd ask and check, what "
+    "would push her toward or away from referral, what would change her mind), her "
+    "reasoning, and her disposition. Then you will be given a new case. Decide the "
+    "disposition this SAME doctor would most likely give, based on how she reasoned "
+    "in the examples -- not generic medical guidance.\n\n"
     "Respond with EXACTLY two lines, nothing else:\n"
     "DISPOSITION: <self-care advice|scheduled appointment|urgent referral>\n"
-    "REASONING: <one or two sentences, in her style, referencing the examples>"
+    "REASONING: <a natural paragraph, two to four sentences, in her voice, as if "
+    "she is talking through the case out loud -- weaving in her first impression, "
+    "what she'd want to ask or check, and what would change her mind where they're "
+    "relevant to THIS case. Never use labels, headers, or bullet points for these -- "
+    "write connected prose, the way she would actually talk, not a form.>"
 )
 
 _RETRY_NUDGE = (
@@ -72,8 +78,28 @@ def draft_from_persona(case_text: str, precedent_cases: list[Case]) -> PersonaDr
 
 
 def _format_example(case: Case) -> str:
+    workup_parts = []
+    if case.initial_impression:
+        workup_parts.append(case.initial_impression.rstrip("."))
+    if case.questions_to_ask:
+        workup_parts.append("she'd ask about " + "; ".join(case.questions_to_ask).rstrip("."))
+    if case.examination_or_checks:
+        workup_parts.append("check " + case.examination_or_checks.rstrip("."))
+    if case.factors_toward_referral:
+        workup_parts.append("would refer if " + case.factors_toward_referral.rstrip("."))
+    if case.factors_against_referral:
+        workup_parts.append(
+            "would manage it herself if " + case.factors_against_referral.rstrip(".")
+        )
+    if case.flip_up:
+        workup_parts.append("would escalate further if " + case.flip_up.rstrip("."))
+    if case.flip_down:
+        workup_parts.append("would step it down if " + case.flip_down.rstrip("."))
+    workup = "; ".join(workup_parts) if workup_parts else "(not recorded)"
+
     return (
         f"Case: {case.transcript_or_summary}\n"
+        f"Her workup: {workup}\n"
         f"Her reasoning: {case.doctor_reasoning_notes or '(not recorded)'}\n"
         f"Her disposition: {case.doctor_disposition}"
     )
