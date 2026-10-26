@@ -106,24 +106,31 @@ def _format_example(case: Case) -> str:
 
 
 def _try_parse(raw: str) -> PersonaDraft | None:
-    disposition: DispositionClass | None = None
-    reasoning = ""
-    for line in raw.splitlines():
-        stripped = line.strip()
-        upper = stripped.upper()
-        if upper.startswith("DISPOSITION:"):
-            label = stripped.split(":", 1)[1].strip().lower()
-            disposition = FROM_WALKTHROUGH_LABEL.get(label)
-            if disposition is None:
-                # Model sometimes answers with the enum's own snake_case value
-                # (e.g. "scheduled_appointment") instead of the human phrase.
-                try:
-                    disposition = DispositionClass(label)
-                except ValueError:
-                    pass
-        elif upper.startswith("REASONING:"):
-            reasoning = stripped.split(":", 1)[1].strip()
-
-    if disposition is None:
+    # Marker-based, not line-based: REASONING is now asked for as a multi-sentence
+    # paragraph, which models routinely wrap across several physical lines, and a
+    # per-line scan would silently drop everything after the first line of it.
+    upper_raw = raw.upper()
+    disposition_idx = upper_raw.find("DISPOSITION:")
+    reasoning_idx = upper_raw.find("REASONING:")
+    if disposition_idx == -1 or reasoning_idx == -1:
         return None
+
+    if disposition_idx < reasoning_idx:
+        disposition_text = raw[disposition_idx + len("DISPOSITION:") : reasoning_idx]
+        reasoning_text = raw[reasoning_idx + len("REASONING:") :]
+    else:
+        reasoning_text = raw[reasoning_idx + len("REASONING:") : disposition_idx]
+        disposition_text = raw[disposition_idx + len("DISPOSITION:") :]
+
+    label = disposition_text.strip().lower()
+    disposition = FROM_WALKTHROUGH_LABEL.get(label)
+    if disposition is None:
+        # Model sometimes answers with the enum's own snake_case value
+        # (e.g. "scheduled_appointment") instead of the human phrase.
+        try:
+            disposition = DispositionClass(label)
+        except ValueError:
+            return None
+
+    reasoning = " ".join(reasoning_text.split())
     return PersonaDraft(disposition=disposition, reasoning=reasoning)

@@ -93,6 +93,22 @@ def test_format_example_weaves_the_full_workup_into_one_narrative_line():
     assert "QUESTIONS_TO_ASK:" not in formatted.upper().replace(" ", "_")
 
 
+def test_parses_reasoning_that_wraps_across_multiple_lines():
+    response = (
+        "DISPOSITION: urgent referral\n"
+        "REASONING: She'd be worried about the danger signs here.\n"
+        "This matches how she handled a similar case before, where she\n"
+        "referred immediately rather than waiting to see how things developed."
+    )
+
+    with patch("backend.agents.persona_agent.chat_completion", return_value=response):
+        draft = draft_from_persona("case", [_make_case("urgent_referral")])
+
+    assert draft.disposition == DispositionClass.URGENT_REFERRAL
+    assert "danger signs" in draft.reasoning
+    assert "referred immediately" in draft.reasoning
+
+
 def test_format_example_handles_missing_workup_fields():
     case = _make_case("self_care_advice")
 
