@@ -126,6 +126,42 @@ def test_consult_runs_the_full_twin(built_twin_clinician: uuid.UUID):
     assert "interaction_id" in body
 
 
+def test_consult_includes_a_doctors_report_with_anonymized_clerical_fields(
+    built_twin_clinician: uuid.UUID,
+):
+    with patch(
+        "backend.agents.twin_agent.draft_from_persona",
+        return_value=PersonaDraft(
+            disposition=DispositionClass.SELF_CARE_ADVICE, reasoning="matches precedent"
+        ),
+    ):
+        response = client.post(
+            "/console/consult",
+            json={
+                "case_text": "fever and chills",
+                "patient_reference": "Patient A",
+                "patient_age": "34",
+                "patient_sex": "female",
+                "temperature": "37.2 C",
+                "blood_pressure": "120/80 mmHg",
+                "pulse_rate": "88 bpm",
+                "respiratory_rate": "18/min",
+                "oxygen_saturation": "97%",
+            },
+        )
+
+    body = response.json()
+    report = body["report"]
+    assert report["patient_reference"] == "Patient A"
+    assert report["patient_age"] == "34"
+    assert report["temperature"] == "37.2 C"
+    assert report["blood_pressure"] == "120/80 mmHg"
+    assert report["oxygen_saturation"] == "97%"
+    assert report["presenting_complaint"] == "fever and chills"
+    assert "self care advice" in report["assessment"]
+    assert report["disclaimer"]
+
+
 def test_corrected_feedback_creates_a_case_and_folds_into_precedent_memory(
     built_twin_clinician: uuid.UUID,
 ):

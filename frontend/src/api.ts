@@ -84,6 +84,25 @@ export interface TwinStatus {
   alreadyBuilt: boolean
 }
 
+export interface DoctorReport {
+  generatedAt: string
+  clinicianName: string
+  patientReference: string | null
+  patientAge: string | null
+  patientSex: string | null
+  temperature: string | null
+  bloodPressure: string | null
+  pulseRate: string | null
+  respiratoryRate: string | null
+  oxygenSaturation: string | null
+  presentingComplaint: string
+  historyAndImpression: string
+  guidelineConsiderations: string[]
+  assessment: string
+  plan: string
+  disclaimer: string
+}
+
 export interface ConsultResult {
   interactionId: string
   configLabel: string
@@ -94,6 +113,18 @@ export interface ConsultResult {
   escalationReasons: string[]
   precedentCaseRefs: string[]
   explanation: ExplanationResult
+  report: DoctorReport
+}
+
+export interface ClericalEntry {
+  patientReference?: string
+  patientAge?: string
+  patientSex?: string
+  temperature?: string
+  bloodPressure?: string
+  pulseRate?: string
+  respiratoryRate?: string
+  oxygenSaturation?: string
 }
 
 function loginUrl(): string {
@@ -418,7 +449,10 @@ export async function buildTwin(): Promise<{ embeddedCount: number }> {
 
 // --- Phase O: consult + feedback ----------------------------------------------
 
-export async function consultTheTwin(caseText: string): Promise<ConsultResult> {
+export async function consultTheTwin(
+  caseText: string,
+  clerical?: ClericalEntry,
+): Promise<ConsultResult> {
   const body = await postJson<{
     interaction_id: string
     config_label: string
@@ -434,7 +468,35 @@ export async function consultTheTwin(caseText: string): Promise<ConsultResult> {
       constraint_rules_triggered: string[]
       reasoning_summary: string
     }
-  }>('/console/consult', { case_text: caseText })
+    report: {
+      generated_at: string
+      clinician_name: string
+      patient_reference: string | null
+      patient_age: string | null
+      patient_sex: string | null
+      temperature: string | null
+      blood_pressure: string | null
+      pulse_rate: string | null
+      respiratory_rate: string | null
+      oxygen_saturation: string | null
+      presenting_complaint: string
+      history_and_impression: string
+      guideline_considerations: string[]
+      assessment: string
+      plan: string
+      disclaimer: string
+    }
+  }>('/console/consult', {
+    case_text: caseText,
+    patient_reference: clerical?.patientReference || null,
+    patient_age: clerical?.patientAge || null,
+    patient_sex: clerical?.patientSex || null,
+    temperature: clerical?.temperature || null,
+    blood_pressure: clerical?.bloodPressure || null,
+    pulse_rate: clerical?.pulseRate || null,
+    respiratory_rate: clerical?.respiratoryRate || null,
+    oxygen_saturation: clerical?.oxygenSaturation || null,
+  })
   return {
     interactionId: body.interaction_id,
     configLabel: body.config_label,
@@ -444,6 +506,24 @@ export async function consultTheTwin(caseText: string): Promise<ConsultResult> {
     escalated: body.escalated,
     escalationReasons: body.escalation_reasons,
     precedentCaseRefs: body.precedent_case_refs,
+    report: {
+      generatedAt: body.report.generated_at,
+      clinicianName: body.report.clinician_name,
+      patientReference: body.report.patient_reference,
+      patientAge: body.report.patient_age,
+      patientSex: body.report.patient_sex,
+      temperature: body.report.temperature,
+      bloodPressure: body.report.blood_pressure,
+      pulseRate: body.report.pulse_rate,
+      respiratoryRate: body.report.respiratory_rate,
+      oxygenSaturation: body.report.oxygen_saturation,
+      presentingComplaint: body.report.presenting_complaint,
+      historyAndImpression: body.report.history_and_impression,
+      guidelineConsiderations: body.report.guideline_considerations,
+      assessment: body.report.assessment,
+      plan: body.report.plan,
+      disclaimer: body.report.disclaimer,
+    },
     explanation: {
       matchedConditions: body.explanation.matched_conditions,
       guidelineEvidence: body.explanation.guideline_evidence,

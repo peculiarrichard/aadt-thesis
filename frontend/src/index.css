@@ -828,3 +828,96 @@ textarea {
 .attestation-field input[type='checkbox'] {
   margin-top: 2px;
 }
+
+/* --- Consult clerical fields --- */
+
+.field-note {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.clerical-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+/* --- Doctor's report --- */
+
+.doctor-report {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin-top: 1.5rem;
+  background: var(--surface);
+}
+
+.doctor-report__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.doctor-report__header h4 {
+  margin: 0;
+}
+
+.doctor-report__meta {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.doctor-report__disclaimer {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--text-muted);
+  border-left: 3px solid var(--brand-dark);
+  padding-left: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.doctor-report__clerical {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.5rem;
+  margin: 0 0 1rem 0;
+}
+
+.doctor-report__clerical dt {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.doctor-report__clerical dd {
+  margin: 0;
+  font-weight: 500;
+}
+
+.doctor-report section {
+  margin-bottom: 1rem;
+}
+
+.doctor-report section h5 {
+  margin: 0 0 0.25rem 0;
+  color: var(--text-h);
+}
+
+.doctor-report__signoff {
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  margin-top: 1rem;
+  color: var(--text-muted);
+}
+
+.doctor-report__signoff p {
+  margin: 0.25rem 0;
+}

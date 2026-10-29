@@ -12,9 +12,11 @@ import uuid
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from backend.agents.report_builder import ClericalDetails, build_doctor_report
 from backend.agents.twin_agent import FULL_SYSTEM, run_twin_agent
 from backend.api.deps import ClinicianIdDep, SessionDep
 from backend.db.enums import ClinicianAction, Mode, SourceType
+from backend.db.models import Clinician
 from backend.disposition import FROM_WALKTHROUGH_LABEL
 from backend.services import data_services
 
@@ -30,6 +32,38 @@ class ExplanationSummary(BaseModel):
 
 class ConsultRequest(BaseModel):
     case_text: str
+    # Anonymized only -- never a real name or hospital number. Consult Mode has
+    # no institutional-ethics gate (see module docstring), unlike the real-patient
+    # recording paths, so it must stay out of real-patient-data territory.
+    patient_reference: str | None = None
+    patient_age: str | None = None
+    patient_sex: str | None = None
+    # Free text so any unit convention is fine (e.g. "37.2 C", "120/80 mmHg") --
+    # clerical/display only, not fed into the twin's own reasoning.
+    temperature: str | None = None
+    blood_pressure: str | None = None
+    pulse_rate: str | None = None
+    respiratory_rate: str | None = None
+    oxygen_saturation: str | None = None
+
+
+class DoctorReportSummary(BaseModel):
+    generated_at: str
+    clinician_name: str
+    patient_reference: str | None
+    patient_age: str | None
+    patient_sex: str | None
+    temperature: str | None
+    blood_pressure: str | None
+    pulse_rate: str | None
+    respiratory_rate: str | None
+    oxygen_saturation: str | None
+    presenting_complaint: str
+    history_and_impression: str
+    guideline_considerations: list[str]
+    assessment: str
+    plan: str
+    disclaimer: str
 
 
 class ConsultResponse(BaseModel):
@@ -42,6 +76,7 @@ class ConsultResponse(BaseModel):
     escalation_reasons: list[str]
     precedent_case_refs: list[str]
     explanation: ExplanationSummary
+    report: DoctorReportSummary
 
 
 @router.post("", response_model=ConsultResponse)
@@ -55,6 +90,7 @@ def consult_the_twin(
         )
 
     output = run_twin_agent(session, clinician_id, body.case_text, FULL_SYSTEM)
+    clinician = session.get(Clinician, clinician_id)
 
     # Ad-hoc, interactive use of the full twin -- not a LOOCV batch row, but
     # the existing Mode enum has no separate value for it; CONSULTING_SANDBOX
@@ -73,6 +109,23 @@ def consult_the_twin(
     session.commit()
 
     disposition = None if output.escalated else output.disposition.value
+
+    report = build_doctor_report(
+        clinician.name,
+        body.case_text,
+        ClericalDetails(
+            patient_reference=body.patient_reference,
+            age=body.patient_age,
+            sex=body.patient_sex,
+            temperature=body.temperature,
+            blood_pressure=body.blood_pressure,
+            pulse_rate=body.pulse_rate,
+            respiratory_rate=body.respiratory_rate,
+            oxygen_saturation=body.oxygen_saturation,
+        ),
+        output,
+    )
+
     return ConsultResponse(
         interaction_id=str(entry.interaction_id),
         config_label=output.config_label,
@@ -87,6 +140,24 @@ def consult_the_twin(
             guideline_evidence=output.explanation.guideline_evidence,
             constraint_rules_triggered=output.explanation.constraint_rules_triggered,
             reasoning_summary=output.explanation.reasoning_summary,
+        ),
+        report=DoctorReportSummary(
+            generated_at=report.generated_at.isoformat(),
+            clinician_name=report.clinician_name,
+            patient_reference=report.clerical.patient_reference,
+            patient_age=report.clerical.age,
+            patient_sex=report.clerical.sex,
+            temperature=report.clerical.temperature,
+            blood_pressure=report.clerical.blood_pressure,
+            pulse_rate=report.clerical.pulse_rate,
+            respiratory_rate=report.clerical.respiratory_rate,
+            oxygen_saturation=report.clerical.oxygen_saturation,
+            presenting_complaint=report.presenting_complaint,
+            history_and_impression=report.history_and_impression,
+            guideline_considerations=report.guideline_considerations,
+            assessment=report.assessment,
+            plan=report.plan,
+            disclaimer=report.disclaimer,
         ),
     )
 

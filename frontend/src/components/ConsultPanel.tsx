@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api, type ConsultResult } from '../api'
 import { dispositionBadgeClass, dispositionLabel } from '../dispositionDisplay'
 import type { DispositionClass } from '../types'
+import { DoctorReport } from './DoctorReport'
 import { TwinThoughtProcess } from './TwinThoughtProcess'
 
 const DISPOSITION_OPTIONS = ['self-care advice', 'scheduled appointment', 'urgent referral']
@@ -11,6 +12,14 @@ const DISPOSITION_OPTIONS = ['self-care advice', 'scheduled appointment', 'urgen
 // the next consult sees it.
 export function ConsultPanel() {
   const [caseText, setCaseText] = useState('')
+  const [patientReference, setPatientReference] = useState('')
+  const [patientAge, setPatientAge] = useState('')
+  const [patientSex, setPatientSex] = useState('')
+  const [temperature, setTemperature] = useState('')
+  const [bloodPressure, setBloodPressure] = useState('')
+  const [pulseRate, setPulseRate] = useState('')
+  const [respiratoryRate, setRespiratoryRate] = useState('')
+  const [oxygenSaturation, setOxygenSaturation] = useState('')
   const [result, setResult] = useState<ConsultResult | null>(null)
   const [consulting, setConsulting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -23,7 +32,16 @@ export function ConsultPanel() {
     setResult(null)
     setFeedbackGiven(false)
     try {
-      const response = await api.consultTheTwin(caseText)
+      const response = await api.consultTheTwin(caseText, {
+        patientReference,
+        patientAge,
+        patientSex,
+        temperature,
+        bloodPressure,
+        pulseRate,
+        respiratoryRate,
+        oxygenSaturation,
+      })
       setResult(response)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not consult your twin.')
@@ -36,6 +54,90 @@ export function ConsultPanel() {
     <section aria-labelledby="consult-heading" className="card">
       <h2 id="consult-heading">Consult Your Twin</h2>
       <form onSubmit={handleConsult}>
+        <p className="field-note">
+          Clerical entries are for the report layout only -- use a reference label, never a real
+          patient name or hospital number.
+        </p>
+        <div className="clerical-fields">
+          <div className="field">
+            <label htmlFor="patient-reference">Patient reference</label>
+            <input
+              id="patient-reference"
+              type="text"
+              value={patientReference}
+              onChange={(e) => setPatientReference(e.target.value)}
+              placeholder="e.g. Patient A"
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="patient-age">Age</label>
+            <input
+              id="patient-age"
+              type="text"
+              value={patientAge}
+              onChange={(e) => setPatientAge(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="patient-sex">Sex</label>
+            <input
+              id="patient-sex"
+              type="text"
+              value={patientSex}
+              onChange={(e) => setPatientSex(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="temperature">Temperature</label>
+            <input
+              id="temperature"
+              type="text"
+              value={temperature}
+              onChange={(e) => setTemperature(e.target.value)}
+              placeholder="e.g. 37.2 C"
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="blood-pressure">Blood pressure</label>
+            <input
+              id="blood-pressure"
+              type="text"
+              value={bloodPressure}
+              onChange={(e) => setBloodPressure(e.target.value)}
+              placeholder="e.g. 120/80 mmHg"
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="pulse-rate">Pulse rate</label>
+            <input
+              id="pulse-rate"
+              type="text"
+              value={pulseRate}
+              onChange={(e) => setPulseRate(e.target.value)}
+              placeholder="e.g. 88 bpm"
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="respiratory-rate">Respiratory rate</label>
+            <input
+              id="respiratory-rate"
+              type="text"
+              value={respiratoryRate}
+              onChange={(e) => setRespiratoryRate(e.target.value)}
+              placeholder="e.g. 18/min"
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="oxygen-saturation">Oxygen saturation</label>
+            <input
+              id="oxygen-saturation"
+              type="text"
+              value={oxygenSaturation}
+              onChange={(e) => setOxygenSaturation(e.target.value)}
+              placeholder="e.g. 97%"
+            />
+          </div>
+        </div>
         <div className="field">
           <label htmlFor="consult-text">Describe the case</label>
           <textarea
@@ -73,6 +175,8 @@ export function ConsultPanel() {
           )}
 
           <TwinThoughtProcess result={result} />
+
+          <DoctorReport report={result.report} />
 
           {!feedbackGiven && (
             <FeedbackControls
