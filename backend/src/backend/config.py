@@ -65,6 +65,11 @@ class Settings(BaseSettings):
     # intentionally a variable, not a constant, so it's easy to change.
     min_cases_to_build_twin: int = 20
 
+    # Patient-facing chat intake (simulated patients only): a hard cap on how
+    # many questions the twin asks before it's forced to summarize, so a chat
+    # always terminates even if the model never signals READY_TO_SUMMARIZE.
+    max_patient_intake_questions: int = 6
+
     @property
     def database_url(self) -> str:
         return (

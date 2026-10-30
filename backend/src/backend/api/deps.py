@@ -8,7 +8,9 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from backend.api.google_auth import require_console_session
+from backend.api.patient_auth import require_patient_session
 from backend.db.session import get_session
 
 ClinicianIdDep = Annotated[uuid.UUID, Depends(require_console_session)]
+PatientIdDep = Annotated[uuid.UUID, Depends(require_patient_session)]
 SessionDep = Annotated[Session, Depends(get_session)]

@@ -12,11 +12,19 @@ class SourceType(enum.StrEnum):
     # distinguishable from the original onboarding data (walkthrough import, bulk
     # upload, recording) that built her starting precedent memory.
     CONSULT_FEEDBACK = "consult_feedback"
+    # A case a clinician's correction created from the patient-facing chat's
+    # human-in-the-loop review (simulated patients only) -- distinguishable from
+    # CONSULT_FEEDBACK, which comes from her own ad-hoc Consult Mode corrections.
+    PATIENT_CHAT_FEEDBACK = "patient_chat_feedback"
 
 
 class Mode(enum.StrEnum):
     LEARNING = "learning"
     CONSULTING_SANDBOX = "consulting_sandbox"
+    # A real-time patient-chat consult (simulated patients only), distinct from
+    # CONSULTING_SANDBOX (the clinician's own ad-hoc Consult Mode) so patient-chat
+    # interactions can be aggregated separately for the twin's patient-facing stats.
+    PATIENT_CONSULT = "patient_consult"
 
 
 class ClinicianAction(enum.StrEnum):
@@ -60,3 +68,19 @@ class IngestionStatus(enum.StrEnum):
     RECEIVED = "received"
     PROCESSED = "processed"
     FAILED = "failed"
+
+
+class PatientChatStatus(enum.StrEnum):
+    """Lifecycle of a patient-facing chat consult (simulated patients only) --
+    PENDING_DOCTOR_REVIEW is the human-in-the-loop gate: a patient sees the
+    twin's draft report while in this state, but it isn't final until the
+    clinician acts on it (see api/patient_review.py)."""
+
+    IN_PROGRESS = "in_progress"
+    PENDING_DOCTOR_REVIEW = "pending_doctor_review"
+    RESOLVED = "resolved"
+
+
+class ChatRole(enum.StrEnum):
+    PATIENT = "patient"
+    TWIN = "twin"

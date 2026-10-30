@@ -2,7 +2,17 @@ import datetime
 import uuid
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import ENUM as PGEnum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -11,12 +21,14 @@ from sqlalchemy.orm import Mapped, mapped_column
 from backend.db.base import Base
 from backend.db.enums import (
     AuditActor,
+    ChatRole,
     ClinicianAction,
     ConsentSubjectType,
     GraphNodeType,
     GraphRelationType,
     IngestionStatus,
     Mode,
+    PatientChatStatus,
     SourceType,
 )
 
@@ -43,6 +55,10 @@ class Clinician(Base):
     # yet (e.g. dev/test fixtures).
     google_sub: Mapped[str | None] = mapped_column(String(255), unique=True)
     email: Mapped[str | None] = mapped_column(String(255))
+    # Shown on the patient-facing twin directory (Phase V) and on her own
+    # console's profile view -- purely descriptive, no behavioral effect.
+    hospital: Mapped[str | None] = mapped_column(String(255))
+    location: Mapped[str | None] = mapped_column(String(255))
 
 
 class Case(Base):
@@ -295,5 +311,137 @@ class IngestionQueueItem(Base):
         default=IngestionStatus.RECEIVED,
     )
     received_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class Patient(Base):
+    """A simulated-patient account for the patient-facing digital twin demo
+    (further work, outside the thesis's evaluated methodology). A separate
+    identity space from Clinician -- email+password, not Google OAuth."""
+
+    __tablename__ = "patients"
+
+    patient_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    email: Mapped[str] = mapped_column(String(255), unique=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    # Shown everywhere instead of the email or a real name (chat, pending/resolved
+    # report, the doctor's review queue) -- same anonymization principle already
+    # applied to Consult Mode's clerical fields (report_builder.py).
+    username: Mapped[str] = mapped_column(String(100), unique=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class PatientChatSession(Base):
+    """A real-time patient-chat consult (simulated patients only), held PENDING
+    until the real clinician reviews it (Phase X's human-in-the-loop gate --
+    addt_solution_design.md Section 12's non-goal is "no patient-facing delivery
+    without a clinician review step in between", satisfied by this gate).
+
+    Unlike Consult Mode's ad-hoc consult (api/consult.py), which relies on the
+    browser resending case_text on feedback, this persists the transcript and
+    report server-side: review happens asynchronously by a different person,
+    possibly much later, so nothing can depend on the patient's browser still
+    being open.
+    """
+
+    __tablename__ = "patient_chat_sessions"
+
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    patient_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("patients.patient_id"), nullable=False, index=True
+    )
+    clinician_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("clinicians.clinician_id"), nullable=False, index=True
+    )
+    status: Mapped[PatientChatStatus] = mapped_column(
+        SQLEnum(PatientChatStatus, name="patient_chat_status"),
+        nullable=False,
+        default=PatientChatStatus.IN_PROGRESS,
+    )
+
+    # Clerical + vitals, entered by the patient before the chat starts -- same
+    # shape as report_builder.ClericalDetails (patient_reference is the
+    # Patient's username, not stored again here).
+    patient_age: Mapped[str | None] = mapped_column(String(50))
+    patient_sex: Mapped[str | None] = mapped_column(String(50))
+    temperature: Mapped[str | None] = mapped_column(String(50))
+    blood_pressure: Mapped[str | None] = mapped_column(String(50))
+    pulse_rate: Mapped[str | None] = mapped_column(String(50))
+    respiratory_rate: Mapped[str | None] = mapped_column(String(50))
+    oxygen_saturation: Mapped[str | None] = mapped_column(String(50))
+
+    # The presenting complaint at first, then overwritten with the chat agent's
+    # synthesized case summary once intake completes.
+    case_text: Mapped[str | None] = mapped_column(Text)
+    interaction_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("interaction_log.interaction_id")
+    )
+    draft_report: Mapped[dict | None] = mapped_column(JSONB)
+    final_report: Mapped[dict | None] = mapped_column(JSONB)
+
+    clinician_action: Mapped[ClinicianAction | None] = mapped_column(
+        SQLEnum(ClinicianAction, name="clinician_action")
+    )
+    clinician_correction_notes: Mapped[str | None] = mapped_column(Text)
+
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    submitted_for_review_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
+    resolved_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class PatientChatMessage(Base):
+    """One turn of a patient-chat transcript (Phase W)."""
+
+    __tablename__ = "patient_chat_messages"
+
+    message_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("patient_chat_sessions.session_id"), nullable=False, index=True
+    )
+    role: Mapped[ChatRole] = mapped_column(SQLEnum(ChatRole, name="chat_role"), nullable=False)
+    content: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class Review(Base):
+    """A patient's rating of a resolved chat session (Phase V) -- one per
+    resolved PatientChatSession, not a drive-by rating untethered from an
+    actual consult."""
+
+    __tablename__ = "reviews"
+    __table_args__ = (
+        UniqueConstraint("patient_chat_session_id", name="uq_review_per_chat_session"),
+    )
+
+    review_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    clinician_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("clinicians.clinician_id"), nullable=False, index=True
+    )
+    patient_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("patients.patient_id"), nullable=False, index=True
+    )
+    patient_chat_session_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("patient_chat_sessions.session_id"), nullable=False, index=True
+    )
+    rating: Mapped[int] = mapped_column(Integer)
+    comment: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

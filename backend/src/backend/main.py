@@ -5,11 +5,16 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from backend.api.case_intake import router as case_intake_router
 from backend.api.case_recording import router as case_recording_router
+from backend.api.clinician_profile import router as clinician_profile_router
 from backend.api.consent import router as consent_router
 from backend.api.console import router as console_router
 from backend.api.consult import router as consult_router
 from backend.api.google_auth import router as google_auth_router
 from backend.api.ingestion import router as ingestion_router
+from backend.api.patient_auth import router as patient_auth_router
+from backend.api.patient_chat import router as patient_chat_router
+from backend.api.patient_directory import router as patient_directory_router
+from backend.api.patient_review import router as patient_review_router
 from backend.api.twin import router as twin_router
 from backend.config import get_settings
 from backend.services.connector import ConnectorError, ConnectorPolicyError
@@ -50,6 +55,13 @@ app.include_router(case_intake_router)
 app.include_router(case_recording_router)
 app.include_router(twin_router)
 app.include_router(consult_router)
+# Patient-facing digital twin (further work, outside the thesis's evaluated
+# methodology, simulated patients only).
+app.include_router(patient_auth_router)
+app.include_router(patient_directory_router)
+app.include_router(patient_chat_router)
+app.include_router(patient_review_router)
+app.include_router(clinician_profile_router)
 
 
 # Without these, an unconsented/unknown clinician hitting any data-service

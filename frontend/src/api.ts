@@ -552,6 +552,291 @@ export async function giveConsultFeedback(
   return { newCaseId: body.new_case_id }
 }
 
+// --- Patient-facing digital twin (further work, outside the thesis's
+// evaluated methodology -- simulated patients only) -----------------------
+
+export interface PatientSession {
+  patientId: string
+  email: string
+  username: string
+}
+
+export interface TwinProfile {
+  clinicianId: string
+  name: string
+  specialty: string | null
+  hospital: string | null
+  location: string | null
+  patientsAttended: number
+  averageConfidence: number | null
+  reviewCount: number
+  averageRating: number | null
+}
+
+interface TwinProfileBody {
+  clinician_id: string
+  name: string
+  specialty: string | null
+  hospital: string | null
+  location: string | null
+  patients_attended: number
+  average_confidence: number | null
+  review_count: number
+  average_rating: number | null
+}
+
+function toTwinProfile(body: TwinProfileBody): TwinProfile {
+  return {
+    clinicianId: body.clinician_id,
+    name: body.name,
+    specialty: body.specialty,
+    hospital: body.hospital,
+    location: body.location,
+    patientsAttended: body.patients_attended,
+    averageConfidence: body.average_confidence,
+    reviewCount: body.review_count,
+    averageRating: body.average_rating,
+  }
+}
+
+interface DoctorReportBody {
+  generated_at: string
+  clinician_name: string
+  patient_reference: string | null
+  patient_age: string | null
+  patient_sex: string | null
+  temperature: string | null
+  blood_pressure: string | null
+  pulse_rate: string | null
+  respiratory_rate: string | null
+  oxygen_saturation: string | null
+  presenting_complaint: string
+  history_and_impression: string
+  guideline_considerations: string[]
+  assessment: string
+  plan: string
+  disclaimer: string
+}
+
+function toDoctorReport(body: DoctorReportBody): DoctorReport {
+  return {
+    generatedAt: body.generated_at,
+    clinicianName: body.clinician_name,
+    patientReference: body.patient_reference,
+    patientAge: body.patient_age,
+    patientSex: body.patient_sex,
+    temperature: body.temperature,
+    bloodPressure: body.blood_pressure,
+    pulseRate: body.pulse_rate,
+    respiratoryRate: body.respiratory_rate,
+    oxygenSaturation: body.oxygen_saturation,
+    presentingComplaint: body.presenting_complaint,
+    historyAndImpression: body.history_and_impression,
+    guidelineConsiderations: body.guideline_considerations,
+    assessment: body.assessment,
+    plan: body.plan,
+    disclaimer: body.disclaimer,
+  }
+}
+
+export async function patientSignup(
+  email: string,
+  password: string,
+  username: string,
+): Promise<PatientSession> {
+  const body = await postJson<{ patient_id: string; email: string; username: string }>(
+    '/auth/patient/signup',
+    { email, password, username },
+  )
+  return { patientId: body.patient_id, email: body.email, username: body.username }
+}
+
+export async function patientLogin(email: string, password: string): Promise<PatientSession> {
+  const body = await postJson<{ patient_id: string; email: string; username: string }>(
+    '/auth/patient/login',
+    { email, password },
+  )
+  return { patientId: body.patient_id, email: body.email, username: body.username }
+}
+
+export async function patientLogout(): Promise<void> {
+  await fetch(`${API_BASE_URL}/auth/patient/logout`, { method: 'POST', credentials: 'include' })
+}
+
+export async function getCurrentPatient(): Promise<PatientSession | null> {
+  try {
+    const body = await fetchJson<{ patient_id: string; email: string; username: string }>(
+      '/auth/patient/me',
+    )
+    return { patientId: body.patient_id, email: body.email, username: body.username }
+  } catch {
+    return null
+  }
+}
+
+export async function listTwinDirectory(): Promise<TwinProfile[]> {
+  const body = await fetchJson<TwinProfileBody[]>('/patient/clinicians')
+  return body.map(toTwinProfile)
+}
+
+export async function getMyTwinProfile(): Promise<TwinProfile> {
+  const body = await fetchJson<TwinProfileBody>('/console/profile')
+  return toTwinProfile(body)
+}
+
+export async function updateMyTwinProfile(fields: {
+  specialty?: string
+  hospital?: string
+  location?: string
+}): Promise<TwinProfile> {
+  const body = await fetchJson<TwinProfileBody>('/console/profile', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      specialty: fields.specialty ?? null,
+      hospital: fields.hospital ?? null,
+      location: fields.location ?? null,
+    }),
+  })
+  return toTwinProfile(body)
+}
+
+export interface ChatIntakeFields {
+  patientAge?: string
+  patientSex?: string
+  temperature?: string
+  bloodPressure?: string
+  pulseRate?: string
+  respiratoryRate?: string
+  oxygenSaturation?: string
+}
+
+export async function createChatSession(
+  clinicianId: string,
+  presentingComplaint: string,
+  fields: ChatIntakeFields,
+): Promise<string> {
+  const body = await postJson<{ session_id: string }>('/patient/chat/sessions', {
+    clinician_id: clinicianId,
+    presenting_complaint: presentingComplaint,
+    patient_age: fields.patientAge || null,
+    patient_sex: fields.patientSex || null,
+    temperature: fields.temperature || null,
+    blood_pressure: fields.bloodPressure || null,
+    pulse_rate: fields.pulseRate || null,
+    respiratory_rate: fields.respiratoryRate || null,
+    oxygen_saturation: fields.oxygenSaturation || null,
+  })
+  return body.session_id
+}
+
+export interface ChatSessionStatus {
+  sessionId: string
+  status: string
+  pending: boolean
+  report: DoctorReport | null
+}
+
+export async function getChatSession(sessionId: string): Promise<ChatSessionStatus> {
+  const body = await fetchJson<{
+    session_id: string
+    status: string
+    pending: boolean
+    report: DoctorReportBody | null
+  }>(`/patient/chat/sessions/${sessionId}`)
+  return {
+    sessionId: body.session_id,
+    status: body.status,
+    pending: body.pending,
+    report: body.report ? toDoctorReport(body.report) : null,
+  }
+}
+
+// WebSocket URL for the live chat exchange -- cookie-based session auth
+// carries over automatically (same-origin browser WebSocket handshake sends
+// cookies the same way fetch does with credentials: 'include').
+export function chatSocketUrl(sessionId: string): string {
+  const wsBase = API_BASE_URL.replace(/^http/, 'ws')
+  return `${wsBase}/patient/chat/ws/${sessionId}`
+}
+
+export async function submitReview(
+  clinicianId: string,
+  chatSessionId: string,
+  rating: number,
+  comment?: string,
+): Promise<void> {
+  await postJson(`/patient/clinicians/${clinicianId}/reviews`, {
+    patient_chat_session_id: chatSessionId,
+    rating,
+    comment: comment ?? null,
+  })
+}
+
+// --- Doctor-side: pending patient-chat review queue (Phase X) ---------------
+
+export interface PendingChatSummary {
+  sessionId: string
+  patientUsername: string
+  submittedForReviewAt: string | null
+  report: DoctorReport | null
+}
+
+export async function listPendingPatientChats(): Promise<PendingChatSummary[]> {
+  const body = await fetchJson<
+    Array<{
+      session_id: string
+      patient_username: string
+      submitted_for_review_at: string | null
+      report: DoctorReportBody | null
+    }>
+  >('/console/patient-chats')
+  return body.map((c) => ({
+    sessionId: c.session_id,
+    patientUsername: c.patient_username,
+    submittedForReviewAt: c.submitted_for_review_at,
+    report: c.report ? toDoctorReport(c.report) : null,
+  }))
+}
+
+export interface PendingChatDetail extends PendingChatSummary {
+  transcript: { role: string; content: string }[]
+}
+
+export async function getPendingPatientChat(sessionId: string): Promise<PendingChatDetail> {
+  const body = await fetchJson<{
+    session_id: string
+    patient_username: string
+    submitted_for_review_at: string | null
+    report: DoctorReportBody | null
+    transcript: { role: string; content: string }[]
+  }>(`/console/patient-chats/${sessionId}`)
+  return {
+    sessionId: body.session_id,
+    patientUsername: body.patient_username,
+    submittedForReviewAt: body.submitted_for_review_at,
+    report: body.report ? toDoctorReport(body.report) : null,
+    transcript: body.transcript,
+  }
+}
+
+export async function reviewPatientChat(
+  sessionId: string,
+  action: 'approved' | 'corrected' | 'escalated_review',
+  options?: { correctedDisposition?: string; correctedReasoning?: string; notes?: string },
+): Promise<{ newCaseId: string | null }> {
+  const body = await postJson<{ resolved: boolean; new_case_id: string | null }>(
+    `/console/patient-chats/${sessionId}/review`,
+    {
+      action,
+      corrected_disposition: options?.correctedDisposition ?? null,
+      corrected_reasoning: options?.correctedReasoning ?? null,
+      correction_notes: options?.notes ?? null,
+    },
+  )
+  return { newCaseId: body.new_case_id }
+}
+
 export const api = {
   loginUrl,
   getCurrentClinician,
@@ -571,4 +856,18 @@ export const api = {
   buildTwin,
   consultTheTwin,
   giveConsultFeedback,
+  patientSignup,
+  patientLogin,
+  patientLogout,
+  getCurrentPatient,
+  listTwinDirectory,
+  getMyTwinProfile,
+  updateMyTwinProfile,
+  createChatSession,
+  getChatSession,
+  chatSocketUrl,
+  submitReview,
+  listPendingPatientChats,
+  getPendingPatientChat,
+  reviewPatientChat,
 }

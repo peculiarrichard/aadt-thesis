@@ -5,10 +5,12 @@ import { ConsultPanel } from './components/ConsultPanel'
 import { DeidentifiedUploadPanel } from './components/DeidentifiedUploadPanel'
 import { IntakeCaseView } from './components/IntakeCaseView'
 import { LoginScreen } from './components/LoginScreen'
+import { PendingPatientConsultsQueue } from './components/PendingPatientConsultsQueue'
 import { PatientRecordingPanel, WalkthroughRecordingPanel } from './components/RecordingPanel'
 import { ResultsView } from './components/ResultsView'
 import { ReviewQueueView } from './components/ReviewQueueView'
 import { TwinBuildPanel } from './components/TwinBuildPanel'
+import { TwinProfilePanel } from './components/TwinProfilePanel'
 
 // Layer 8 console shell (Section 5.8). Gated behind Google sign-in. Each
 // data-intake path is its own tab, deliberately kept separate (not combined
@@ -24,6 +26,8 @@ type View =
   | 'consult'
   | 'queue'
   | 'results'
+  | 'twinProfile'
+  | 'patientChats'
 
 const TABS: { key: View; label: string }[] = [
   { key: 'intake', label: 'Intake / Case' },
@@ -35,6 +39,9 @@ const TABS: { key: View; label: string }[] = [
   { key: 'consult', label: 'Consult' },
   { key: 'queue', label: 'Review Queue' },
   { key: 'results', label: 'Results' },
+  // Patient-facing digital twin (further work, simulated patients only).
+  { key: 'twinProfile', label: 'My Twin Profile' },
+  { key: 'patientChats', label: 'Patient Consults' },
 ]
 
 function App() {
@@ -96,6 +103,8 @@ function App() {
             {view === 'consult' && <ConsultPanel />}
             {view === 'queue' && <ReviewQueueView />}
             {view === 'results' && <ResultsView />}
+            {view === 'twinProfile' && <TwinProfilePanel />}
+            {view === 'patientChats' && <PendingPatientConsultsQueue />}
           </main>
         </>
       )}
